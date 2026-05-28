@@ -1,0 +1,30 @@
+{
+  "runId": "run_1779959361079",
+  "status": "failed",
+  "startTime": "2026-05-28T09:09:21.079Z",
+  "stages": [
+    {
+      "name": "install",
+      "command": "npm install",
+      "status": "passed",
+      "duration": "0.81s",
+      "exitCode": 0
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "status": "passed",
+      "duration": "0.81s",
+      "exitCode": 0
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "failed",
+      "duration": "0.81s",
+      "exitCode": 1
+    }
+  ],
+  "logs": "=== VIBECHECK AI PIPELINE RUN [run_1779959361079] ===\nProject: CICD-Pipeline (NODEJS)\nBranch: main\nStarted: 2026-05-28T09:09:21.079Z\n==============================================\n\n>>> STAGE [INSTALL]: Running \"npm install\"...\nadded 142 packages, and audited 143 packages in 1.42s\nfound 0 vulnerabilities\n\n<<< STAGE [INSTALL] PASSED in 0.81s\n\n>>> STAGE [BUILD]: Running \"npm run build\"...\n\n> build\n> node -e \"console.log('Production build successful!')\"\n\nProduction build successful!\n\n<<< STAGE [BUILD] PASSED in 0.81s\n\n>>> STAGE [TEST]: Running \"npm test\"...\nRunning math module scaling tests...\nPASS: Scaling test with non-zero scale passed\nTESTING: Scaling with zero scale value...\nComputing scaling factor for scale: 0\n\nSTDERR:\nFAIL: Test failed during execution!\nError: Expected computeScalingFactor(0) to handle zero scale gracefully, but hit division by zero.\n    at computeScalingFactor (C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\vibecheck_repo_vl9aeow_1779958912439\\workspace\\index.js:7:21)\n    at Object.<anonymous> (C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\vibecheck_repo_vl9aeow_1779958912439\\workspace\\test.js:10:18)\n    at Module._compile (internal/modules/cjs/loader.js:1105:14)\n\n<<< STAGE [TEST] FAILED in 0.81s\n\n!!! PIPELINE FAILED AT STAGE [TEST] !!!\n",
+  "endTime": "2026-05-28T09:09:23.509Z"
+}

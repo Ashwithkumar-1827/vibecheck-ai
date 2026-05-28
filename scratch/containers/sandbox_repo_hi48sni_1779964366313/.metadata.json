@@ -1,0 +1,124 @@
+{
+  "id": "sandbox_repo_hi48sni_1779964366313",
+  "repoId": "repo_hi48sni",
+  "repoUrl": "https://github.com/G-VarshithReddy/CICD-Pipeline",
+  "branch": "main",
+  "owner": "G-VarshithReddy",
+  "name": "CICD-Pipeline",
+  "status": "ready",
+  "created": "2026-05-28T10:32:50.205Z",
+  "projectType": "nodejs",
+  "dockerId": null,
+  "detection": {
+    "projectType": "nodejs",
+    "packageManager": "npm",
+    "buildScript": "npm run build",
+    "testRunner": "custom",
+    "testCommand": "npm test",
+    "hasDocker": true,
+    "hasCICD": true,
+    "cicdType": "github-actions",
+    "detectedFiles": [
+      ".git",
+      ".github",
+      ".gitignore",
+      "Dockerfile",
+      "index.js",
+      "package.json",
+      "README.md",
+      "src",
+      "test.js",
+      "tests"
+    ]
+  },
+  "lastRun": {
+    "runId": "run_1779964446275",
+    "status": "passed",
+    "time": "2026-05-28T10:34:08.708Z"
+  },
+  "knowledgeGraph": {
+    "outputDir": "C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\sandbox_repo_hi48sni_1779964366313\\workspace\\graphify-out",
+    "graphPath": "C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\sandbox_repo_hi48sni_1779964366313\\workspace\\graphify-out\\graph.json",
+    "reportPath": "C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\sandbox_repo_hi48sni_1779964366313\\workspace\\graphify-out\\GRAPH_REPORT.md",
+    "htmlPath": "C:\\Users\\mashw\\Desktop\\Open AI\\phase2\\vibecheck-ai\\scratch\\containers\\sandbox_repo_hi48sni_1779964366313\\workspace\\graphify-out\\graph.html",
+    "stats": {
+      "files": 9,
+      "nodes": 24,
+      "edges": 16
+    },
+    "godNodes": [
+      {
+        "id": "file_index_js",
+        "label": "index.js",
+        "file_type": "code",
+        "source_file": "index.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 6
+      },
+      {
+        "id": "file_readme_md",
+        "label": "README.md",
+        "file_type": "document",
+        "source_file": "README.md",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 4
+      },
+      {
+        "id": "file_src_aggregator_js",
+        "label": "src/aggregator.js",
+        "file_type": "code",
+        "source_file": "src/aggregator.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 3
+      },
+      {
+        "id": "dep_src_aggregator",
+        "label": "./src/aggregator",
+        "file_type": "code",
+        "source_file": "index.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 2
+      },
+      {
+        "id": "file_test_js",
+        "label": "test.js",
+        "file_type": "code",
+        "source_file": "test.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 2
+      },
+      {
+        "id": "symbol_index_js_computescalingfactor",
+        "label": "computeScalingFactor",
+        "file_type": "code",
+        "source_file": "index.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 1
+      },
+      {
+        "id": "symbol_index_js_processtelemetrydata",
+        "label": "processTelemetryData",
+        "file_type": "code",
+        "source_file": "index.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 1
+      },
+      {
+        "id": "symbol_index_js_coefficient",
+        "label": "coefficient",
+        "file_type": "code",
+        "source_file": "index.js",
+        "source_location": null,
+        "degree_hint": 0,
+        "degree": 1
+      }
+    ]
+  }
+}

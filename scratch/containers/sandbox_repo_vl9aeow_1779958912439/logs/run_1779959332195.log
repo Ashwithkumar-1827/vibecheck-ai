@@ -1,0 +1,37 @@
+=== VIBECHECK AI PIPELINE RUN [run_1779959332195] ===
+Project: CICD-Pipeline (NODEJS)
+Branch: main
+Started: 2026-05-28T09:08:52.195Z
+==============================================
+
+>>> STAGE [INSTALL]: Running "npm install"...
+added 142 packages, and audited 143 packages in 1.42s
+found 0 vulnerabilities
+
+<<< STAGE [INSTALL] PASSED in 0.80s
+
+>>> STAGE [BUILD]: Running "npm run build"...
+
+> build
+> node -e "console.log('Production build successful!')"
+
+Production build successful!
+
+<<< STAGE [BUILD] PASSED in 0.81s
+
+>>> STAGE [TEST]: Running "npm test"...
+Running math module scaling tests...
+PASS: Scaling test with non-zero scale passed
+TESTING: Scaling with zero scale value...
+Computing scaling factor for scale: 0
+
+STDERR:
+FAIL: Test failed during execution!
+Error: Expected computeScalingFactor(0) to handle zero scale gracefully, but hit division by zero.
+    at computeScalingFactor (C:\Users\mashw\Desktop\Open AI\phase2\vibecheck-ai\scratch\containers\vibecheck_repo_vl9aeow_1779958912439\workspace\index.js:7:21)
+    at Object.<anonymous> (C:\Users\mashw\Desktop\Open AI\phase2\vibecheck-ai\scratch\containers\vibecheck_repo_vl9aeow_1779958912439\workspace\test.js:10:18)
+    at Module._compile (internal/modules/cjs/loader.js:1105:14)
+
+<<< STAGE [TEST] FAILED in 0.81s
+
+!!! PIPELINE FAILED AT STAGE [TEST] !!!

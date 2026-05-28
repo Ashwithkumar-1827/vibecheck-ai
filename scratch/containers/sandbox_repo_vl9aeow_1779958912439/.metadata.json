@@ -1,0 +1,39 @@
+{
+  "id": "sandbox_repo_vl9aeow_1779958912439",
+  "repoId": "repo_vl9aeow",
+  "repoUrl": "https://github.com/G-VarshithReddy/CICD-Pipeline",
+  "branch": "main",
+  "owner": "G-VarshithReddy",
+  "name": "CICD-Pipeline",
+  "status": "ready",
+  "created": "2026-05-28T09:50:32.773Z",
+  "projectType": "nodejs",
+  "dockerId": null,
+  "detection": {
+    "projectType": "nodejs",
+    "packageManager": "npm",
+    "buildScript": "npm run build",
+    "testRunner": "custom",
+    "testCommand": "npm test",
+    "hasDocker": true,
+    "hasCICD": true,
+    "cicdType": "github-actions",
+    "detectedFiles": [
+      ".git",
+      ".github",
+      ".gitignore",
+      "Dockerfile",
+      "index.js",
+      "package.json",
+      "README.md",
+      "src",
+      "test.js",
+      "tests"
+    ]
+  },
+  "lastRun": {
+    "runId": "run_1779964042933",
+    "status": "passed",
+    "time": "2026-05-28T10:27:25.357Z"
+  }
+}
