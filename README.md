@@ -29,6 +29,34 @@ VibeCheck AI is built around a secure, resilient, and zero-trust self-healing lo
 5.  **Real-Time Log Streaming Console**
     *   Leverages Server-Sent Events (SSE) to push stdout/stderr logs directly from running pipeline executors to the browser dashboard in real time with full ANSI colors.
 
+---
+
+## 🛡️ Sandbox Isolation & Dependency Graph (Graphify) Architecture
+
+To make VibeCheck AI safe and scalable for enterprise codebases, we solved two critical engineering challenges: **host execution security** and **cascading microservice dependencies**.
+
+### 1. Why VibeCheck AI Enforces Sandbox Isolation (Security Concerns)
+Running automated pipeline checks, dependency installations, and test runners (like `pytest` or `npm test`) directly on the host server poses severe security risks:
+*   **Arbitrary Code Execution**: Testing unverified repositories exposes the host machine to malicious or unstable scripts that could hijack the server.
+*   **Secrets Exposure**: Malicious dependency configurations or tests could access local environment variables, leaking your critical cloud keys, Personal Access Tokens, and database credentials.
+*   **File System Contamination**: Unbounded code changes can corrupt the local OS directory structures or write backdoors to server storage.
+
+**The Solution:**
+VibeCheck AI implements a strict **Zero-Trust container boundary** using Docker Engine. All repository cloning, dependency resolution, script execution, and patch verification are isolated inside disposable, resource-constrained container wrappers (`Dockerfile.node` and `Dockerfile.python`). If Docker is not available on the development machine, it falls back to a highly isolated directory boundary with strict shell command sanitization. **No untrusted code is ever executed directly on your host server.**
+
+### 2. Why VibeCheck AI Uses Codebase Knowledge Graphs (Graphify)
+In modern microservice architectures, repositories are rarely self-contained. A failure in one service is often caused by a breaking change or bug inside a shared, common utility library:
+*   **The symptom**: Downstream microservices crash, resulting in multiple failing pipeline logs across separate endpoints.
+*   **The challenge**: An AI looking only at a single failing service log will try to patch the symptom locally rather than fixing the shared bug at its source, leading to code duplication or regression.
+
+**The Solution:**
+Upon importing a repository, VibeCheck parses the code imports, exports, classes, and method signatures into a visual **Dependency Knowledge Graph (Graphify)**. When a build fails, the Gemini diagnostic agent queries the Knowledge Graph to trace the import tree:
+*   It visualizes the shared dependencies across all modules.
+*   It identifies the root core dependency causing the cascade (for instance, a token verification bug in `core/security.py` breaking both `billing.py` and `report_engine.py`).
+*   It generates a single, high-precision root-level patch that heals the entire downstream microservice suite in one operation.
+
+---
+
 ## 📸 Platform Showcase
 
 ### 1. High-Fidelity Landing Page (Framer-Inspired)
