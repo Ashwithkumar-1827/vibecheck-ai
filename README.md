@@ -29,6 +29,20 @@ VibeCheck AI is built around a secure, resilient, and zero-trust self-healing lo
 5.  **Real-Time Log Streaming Console**
     *   Leverages Server-Sent Events (SSE) to push stdout/stderr logs directly from running pipeline executors to the browser dashboard in real time with full ANSI colors.
 
+## 📸 Platform Showcase
+
+### 1. High-Fidelity Landing Page (Framer-Inspired)
+![Landing Page](public/screenshots/landing_page.png)
+
+### 2. Autonomic Pipelines Cockpit (Real-time Run Logs)
+![Pipelines Console](public/screenshots/pipelines.png)
+
+### 3. GitHub OAuth & Sandbox Repository Manager
+![Repository Manager](public/screenshots/repositories.png)
+
+### 4. Twin Container Sandbox Control Room
+![Sandbox Workspace](public/screenshots/sandbox.png)
+
 ---
 
 ## 📂 Project Directory Structure
