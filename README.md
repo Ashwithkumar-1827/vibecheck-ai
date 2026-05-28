@@ -152,7 +152,7 @@ To initialize package dependencies, seed the mock database, and launch the platf
 Open the generated `.env` file in the root of the project and add your API credentials:
 ```env
 # Gemini API Key (Required for live diagnostics)
-GEMINI_API_KEY=AIzaSy...
+GEMINI_API_KEY=...
 
 # GitHub OAuth App Details (Required for GitHub connections)
 GITHUB_CLIENT_ID="your_client_id"
