@@ -33,3 +33,6 @@ db.json.tmp
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Scratch containers
+scratch/containers/

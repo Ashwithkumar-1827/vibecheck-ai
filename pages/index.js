@@ -1,1581 +1,503 @@
-import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import Sidebar from '../components/Sidebar';
-import ConsoleLog from '../components/ConsoleLog';
-import DiagnosticCard from '../components/DiagnosticCard';
-import DiffViewer from '../components/DiffViewer';
-import RepoManager from '../components/tabs/RepoManager';
-import PipelineConsole from '../components/tabs/PipelineConsole';
-import SandboxWorkspace from '../components/tabs/SandboxWorkspace';
-import UserGuide from '../components/tabs/UserGuide';
-import { 
-  GitBranch, ChevronRight, Activity, ShieldCheck, AlertCircle, Sliders, 
-  Sparkles, Terminal, Database, Key, Cpu, HardDrive, KeyRound, Save, 
-  Trash2, CheckCircle, RefreshCw, Play, Info, AlertTriangle, Eye, EyeOff 
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
 
-export default function Dashboard() {
-  const [builds, setBuilds] = useState([]);
-  const [selectedBuild, setSelectedBuild] = useState(null);
-  const [isTriggering, setIsTriggering] = useState(false);
+/* ============================================================
+   VibeCheck AI — Landing Page
+   Dark canvas marketing site inspired by DESIGN.md
+   ============================================================ */
 
-  // SaaS Custom Log Diagnostic Engine State
-  const [customJobName, setCustomJobName] = useState('');
-  const [customLogOutput, setCustomLogOutput] = useState('');
-  const [customSourceCode, setCustomSourceCode] = useState('');
-  const [isDiagnosingCustom, setIsDiagnosingCustom] = useState(false);
-  const [customError, setCustomError] = useState('');
+export default function LandingPage() {
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const handleCustomDiagnose = async (e) => {
-    e.preventDefault();
-    if (!customJobName.trim() || !customLogOutput.trim()) {
-      setCustomError('Job/Service name and Console log output are required.');
-      return;
-    }
-    setCustomError('');
-    setIsDiagnosingCustom(true);
-
-    try {
-      const res = await fetch('/api/builds/diagnose-custom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobName: customJobName,
-          logOutput: customLogOutput,
-          sourceCode: customSourceCode
-        })
-      });
-      const data = await res.json();
-      
-      if (res.ok && data.id) {
-        // Clear forms
-        setCustomJobName('');
-        setCustomLogOutput('');
-        setCustomSourceCode('');
-        
-        // Refresh builds and select this new custom build
-        await fetchBuilds();
-        fetchBuildDetails(data.id);
-      } else {
-        setCustomError(data.error || 'AI could not generate a patch for this failure.');
-      }
-    } catch (err) {
-      console.error("Failed to run custom diagnosis:", err);
-      setCustomError(`Failed to run AI diagnosis: ${err.message}`);
-    } finally {
-      setIsDiagnosingCustom(false);
-    }
-  };
-  const [systemConfig, setSystemConfig] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to premium dark mode
-  const [activeTab, setActiveTab] = useState('pipelines'); // 'pipelines', 'agent', 'database', 'keys', 'repos', 'execution', 'sandbox'
-  const [selectedRepoForConsole, setSelectedRepoForConsole] = useState(null);
-  const [sandboxConfig, setSandboxConfig] = useState(null);
-  
-  // Database tab states
-  const [rawDbContent, setRawDbContent] = useState('');
-  const [dbStatusMsg, setDbStatusMsg] = useState({ type: '', text: '' });
-  const [isResettingDb, setIsResettingDb] = useState(false);
-  const [isSavingDb, setIsSavingDb] = useState(false);
-
-  // Credentials tab states
-  const [credentials, setCredentials] = useState({ openaiKey: '', geminiKey: '' });
-  const [credentialsConfigured, setCredentialsConfigured] = useState({ openai: false, gemini: false });
-  const [maskedKeys, setMaskedKeys] = useState({ openai: '', gemini: '' });
-  const [credStatusMsg, setCredStatusMsg] = useState({ type: '', text: '' });
-  const [isSavingKeys, setIsSavingKeys] = useState(false);
-  const [showKeys, setShowKeys] = useState({ openai: false, gemini: false });
-
-  // Azure DevOps Tab Coordination (Summary vs Logs)
-  const [activeSubTab, setActiveSubTab] = useState('summary');
-  
-  // ADO Logs Selected Step Navigator
-  const [selectedLogStep, setSelectedLogStep] = useState('env');
-
-  // Fetch initial builds and system configuration on mount
+  // Sticky nav scroll listener
   useEffect(() => {
-    fetchSystemConfig();
-    fetchBuilds(true);
-    fetchCredentialsStatus();
+    const handleScroll = () => setNavScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 2-HOUR BACKGROUND CRON: Automatically append a new enterprise failure scenario
+  // Intersection Observer for scroll reveals
   useEffect(() => {
-    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-    
-    const cronRefresh = async () => {
-      console.log('[Cron] Triggering 2-hour enterprise scenario refresh...');
-      try {
-        const res = await fetch('/api/system/refresh', { method: 'POST' });
-        const data = await res.json();
-        console.log('[Cron] Refresh result:', data.message);
-        // Silently reload the builds list to show the new scenario
-        fetchBuilds();
-      } catch (e) {
-        console.error('[Cron] Failed to refresh use cases:', e);
-      }
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
 
-    const intervalId = setInterval(cronRefresh, TWO_HOURS_MS);
-    console.log('[Cron] Background scenario refresh scheduler started (every 2 hours).');
-    
-    return () => clearInterval(intervalId);
+    const elements = document.querySelectorAll('.reveal');
+    elements.forEach((el) => observer.observe(el));
+    return () => elements.forEach((el) => observer.unobserve(el));
   }, []);
 
-  // Sync db raw view when builds update
-  useEffect(() => {
-    fetchRawDbData();
-  }, [builds, activeTab]);
-
-  // DOUBLE-LAYER THEME INJECTION: Force 'dark' class on BOTH document element and document body
-  useEffect(() => {
-    console.log(`[Theme] Toggling color mode. Dark Mode Active: ${isDarkMode}`);
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
-
-  const fetchSystemConfig = async () => {
-    try {
-      const res = await fetch('/api/system/config');
-      const data = await res.json();
-      setSystemConfig(data);
-    } catch (e) {
-      console.error("Failed to fetch system configuration:", e);
-    }
-  };
-
-  const fetchBuilds = async (selectLatest = false) => {
-    try {
-      const res = await fetch('/api/builds');
-      const data = await res.json();
-      setBuilds(data);
-      console.log(`[Database] Fetched builds list successfully: ${data.length} records found.`);
-      
-      if (selectLatest && data.length > 0) {
-        fetchBuildDetails(data[0].id);
-      }
-    } catch (e) {
-      console.error("Failed to fetch builds list:", e);
-    }
-  };
-
-  const fetchBuildDetails = async (id) => {
-    console.log(`[Database] Loading full build details for Build #${id}...`);
-    try {
-      const res = await fetch(`/api/builds/${id}`);
-      const data = await res.json();
-      setSelectedBuild(data);
-      
-      // Reset to Azure DevOps Summary Tab on build selection
-      setActiveSubTab('summary');
-      setSelectedLogStep('env');
-    } catch (e) {
-      console.error(`Failed to fetch build details for Build #${id}:`, e);
-    }
-  };
-
-  const handleSelectBuild = (id) => {
-    console.log(`[User Event] Selected Build #${id}`);
-    if (id === 'custom_triage') {
-      setSelectedBuild('custom_triage');
-    } else {
-      fetchBuildDetails(id);
-    }
-  };
-
-  const handleTriggerBuild = async () => {
-    console.log("[User Event] Triggered fresh Enterprise Build run.");
-    setIsTriggering(true);
-    try {
-      const res = await fetch('/api/builds', { method: 'POST' });
-      const newBuild = await res.json();
-      await fetchBuilds();
-      setSelectedBuild(newBuild);
-    } catch (e) {
-      console.error("Failed to trigger pipeline build:", e);
-    } finally {
-      setIsTriggering(false);
-    }
-  };
-
-  const handleApprovePatch = async (patchId) => {
-    if (!selectedBuild) return;
-    console.log(`[User Event] Approved patch #${patchId}. Applying autonomic hotfix fixes...`);
-    setSelectedBuild(prev => ({ ...prev, status: 'HEALING' }));
-    
-    try {
-      const res = await fetch(`/api/patches/${patchId}/approve`, { method: 'POST' });
-      const result = await res.json();
-      
-      if (res.ok && result.success) {
-        setTimeout(async () => {
-          await fetchBuilds();
-          setSelectedBuild(result.build);
-        }, 1500);
-      } else {
-        const errMsg = result.error || "The healing pipeline executed but the verification tests failed. Inspect the console logs.";
-        alert(`Autonomic Healing Failure:\n\n${errMsg}`);
-        await fetchBuilds();
-        fetchBuildDetails(selectedBuild.id);
-      }
-    } catch (e) {
-      console.error("Failed to approve and apply code patch:", e);
-      alert(`Network/System Error: Failed to apply code patch. ${e.message}`);
-      await fetchBuilds();
-      fetchBuildDetails(selectedBuild.id);
-    }
-  };
-
-  const handleRejectPatch = async (patchId) => {
-    if (!selectedBuild) return;
-    console.log(`[User Event] Rejected proposed patch #${patchId}.`);
-    
-    try {
-      const res = await fetch(`/api/patches/${patchId}/reject`, { method: 'POST' });
-      const result = await res.json();
-      
-      if (result.success) {
-        await fetchBuilds();
-        setSelectedBuild(result.build);
-      }
-    } catch (e) {
-      console.error("Failed to reject code patch:", e);
-    }
-  };
-
-  // Trigger AI diagnosis for a FAILED build (no hardcoded answers)
-  const handleDiagnose = async (buildId) => {
-    console.log(`[User Event] Triggering AI diagnosis for Build #${buildId}...`);
-    try {
-      const res = await fetch(`/api/builds/${buildId}/diagnose`, { method: 'POST' });
-      const result = await res.json();
-      
-      if (result.error) {
-        console.error('Diagnosis failed:', result.error);
-        alert(`AI Diagnosis Error: ${result.error}`);
-        return;
-      }
-      
-      if (result.build) {
-        await fetchBuilds();
-        setSelectedBuild(result.build);
-      }
-    } catch (e) {
-      console.error('Failed to trigger AI diagnosis:', e);
-      alert('Failed to trigger AI diagnosis. Check console for details.');
-    }
-  };
-
-  // Fetch masks and env credentials config
-  const fetchCredentialsStatus = async () => {
-    try {
-      const res = await fetch('/api/system/credentials');
-      const data = await res.json();
-      setCredentialsConfigured({
-        openai: data.openai_configured,
-        gemini: data.gemini_configured
-      });
-      setMaskedKeys({
-        openai: data.openai_masked,
-        gemini: data.gemini_masked
-      });
-    } catch (err) {
-      console.error("Failed to load credentials status:", err);
-    }
-  };
-
-  // Fetch raw db.json content for editor
-  const fetchRawDbData = async () => {
-    try {
-      const res = await fetch('/api/builds');
-      const buildsData = await res.json();
-      
-      // Let's create a beautiful styled JSON representation including schema overview
-      const fullSchema = {
-        database_engine: "Zero-Binary Local JSON Core (lib/db.js)",
-        records_count: buildsData.length,
-        data: buildsData
-      };
-      setRawDbContent(JSON.stringify(fullSchema, null, 2));
-    } catch (e) {
-      setRawDbContent("// Failed to query local db.json storage.");
-    }
-  };
-
-  const handleResetDb = async () => {
-    setIsResettingDb(true);
-    setDbStatusMsg({ type: '', text: '' });
-    try {
-      const res = await fetch('/api/system/reset', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setDbStatusMsg({ type: 'success', text: 'Database successfully restored to original enterprise seeds.' });
-        await fetchBuilds(true);
-        fetchSystemConfig();
-      } else {
-        setDbStatusMsg({ type: 'error', text: 'Failed to clear local database.' });
-      }
-    } catch (err) {
-      setDbStatusMsg({ type: 'error', text: 'Error executing database reset request.' });
-    } finally {
-      setIsResettingDb(false);
-      setTimeout(() => setDbStatusMsg({ type: '', text: '' }), 5000);
-    }
-  };
-
-  const handleSaveCredentials = async (e) => {
-    e.preventDefault();
-    setIsSavingKeys(true);
-    setCredStatusMsg({ type: '', text: '' });
-    
-    try {
-      const res = await fetch('/api/system/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          openaiKey: credentials.openaiKey || undefined,
-          geminiKey: credentials.geminiKey || undefined
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCredStatusMsg({ type: 'success', text: 'Credentials stored! Hot-reloading environment context...' });
-        setCredentials({ openaiKey: '', geminiKey: '' });
-        await fetchCredentialsStatus();
-        await fetchSystemConfig();
-      } else {
-        setCredStatusMsg({ type: 'error', text: 'Failed to update credentials. Check logs.' });
-      }
-    } catch (err) {
-      setCredStatusMsg({ type: 'error', text: 'Network connection failure updating configurations.' });
-    } finally {
-      setIsSavingKeys(false);
-      setTimeout(() => setCredStatusMsg({ type: '', text: '' }), 5000);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'SUCCESS': return 'text-emerald-600 dark:text-emerald-450';
-      case 'FAILED': return 'text-red-600 dark:text-red-450';
-      case 'PENDING_APPROVAL': return 'text-amber-600 dark:text-amber-405';
-      case 'HEALING': return 'text-zinc-500 dark:text-zinc-400';
-      default: return 'text-zinc-400';
-    }
-  };
-
-  // 1. Diagnostics Cockpit Workspace View (tab: 'agent')
-  const renderAgentWorkspace = () => {
-    const totalRuns = builds.length;
-    const passedRuns = builds.filter(b => b.status === 'SUCCESS').length;
-    const failedRuns = builds.filter(b => b.status === 'FAILED' || b.status === 'PENDING_APPROVAL').length;
-    const healingRuns = builds.filter(b => b.status === 'HEALING').length;
-    const successRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : 100;
-    
-    return (
-      <div className="flex-1 p-8 overflow-y-auto h-full max-w-5xl mx-auto space-y-8 select-text no-scrollbar">
-        {/* Apple Style Monochromatic Header */}
-        <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl">
-              <Sparkles className="h-5 w-5 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">VibeCheck Diagnostics Dashboard</h2>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">Enterprise Triage Performance, Latency Gauges, & autonomic hotfix Workflows</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Executive Stats Cards (Apple Design: Flat, high-contrast, padded) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Total Pipeline Runs</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{totalRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">runs</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Verification Pass Rate</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${successRate > 70 ? 'text-emerald-600' : 'text-zinc-900 dark:text-white'}`}>{successRate}%</span>
-              <span className="text-xs font-mono text-zinc-400">healed/green</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Active Failures</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${failedRuns > 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}`}>{failedRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">triage pending</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Active Healers</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${healingRuns > 0 ? 'text-zinc-900 dark:text-white animate-pulse' : 'text-zinc-900 dark:text-white'}`}>{healingRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">in execution</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Diagnostics Latency & Multi-LLM Benchmarks (Google Inspired Panels) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl space-y-4">
-            <div className="flex items-center space-x-2 border-b border-zinc-200/80 dark:border-zinc-900 pb-3">
-              <Cpu className="h-4.5 w-4.5 text-zinc-500" />
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">LLM Triage Speed Benchmarks</h3>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Row 1: Gemini */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">Google Gemini 2.5 Flash</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">~0.9s (Active Failover)</span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[85%] rounded-full"></div>
-                </div>
-              </div>
-              
-              {/* Row 2: OpenAI */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">OpenAI GPT-4o-mini</span>
-                  <span className="text-zinc-500 dark:text-zinc-450">~1.2s (Quota Limited 429)</span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-zinc-400 dark:bg-zinc-700 h-full w-[65%] rounded-full"></div>
-                </div>
-              </div>
-
-              {/* Row 3: Simulator Fallback */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">Offline Triage Simulator</span>
-                  <span className="text-zinc-400 dark:text-zinc-500">~0.01s (Instant Core Engine)</span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-zinc-250 dark:bg-zinc-800 h-full w-[98%] rounded-full"></div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-zinc-50 dark:bg-zinc-900/40 p-3 rounded-lg border border-zinc-250/80 dark:border-zinc-900 text-[10px] text-zinc-450 dark:text-zinc-500 font-mono flex items-start space-x-2">
-              <Info className="h-3.5 w-3.5 mt-0.5 text-zinc-400 shrink-0" />
-              <span>VibeCheck dynamically evaluates active LLM state constraints. If your configured OpenAI token yields a quota limitation, it initiates zero-delay fallback failover to the Google Gemini Flash API.</span>
-            </div>
-          </div>
-
-          <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl space-y-5 flex flex-col min-h-[460px]">
-            <div className="flex items-center space-x-2 border-b border-zinc-200/80 dark:border-zinc-900 pb-3 shrink-0">
-              <Activity className="h-4.5 w-4.5 text-zinc-500" />
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">automated hotfix pipeline Tree Flowchart</h3>
-            </div>
-
-            {/* Tree Flowchart Container (flowcharting frameworks / modeling suites Inspired) */}
-            <div className="flex-1 flex flex-col items-center justify-between select-none">
-              
-              {/* Level 1: Root Node */}
-              <div className="relative z-10 flex flex-col items-center shrink-0">
-                <div className="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border border-zinc-900 dark:border-zinc-250 px-6 py-2.5 rounded-xl font-mono text-[9px] uppercase font-bold tracking-widest shadow-sm flex items-center space-x-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span>VibeCheck CI-CD Engine</span>
-                </div>
-              </div>
-
-              {/* Connector Tree level 1 -> level 2 */}
-              <div className="w-full h-6 relative select-none pointer-events-none shrink-0">
-                <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="50%" y1="0" x2="50%" y2="50%" />
-                  <line x1="25%" y1="50%" x2="75%" y2="50%" />
-                  <line x1="25%" y1="50%" x2="25%" y2="100%" />
-                  <line x1="75%" y1="50%" x2="75%" y2="100%" />
-                </svg>
-              </div>
-
-              {/* Level 2 & 3 Combined Vertical Branching Paths */}
-              <div className="w-full flex justify-between gap-4 flex-1">
-                
-                {/* Left Column: Diagnostics Subsystem Branch */}
-                <div className="w-[48%] flex flex-col items-center justify-between h-full">
-                  <div className="w-full text-center border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 py-2 rounded-lg font-mono text-[8.5px] uppercase font-bold tracking-wider text-zinc-650 dark:text-zinc-300 shadow-sm shrink-0">
-                    Diagnostics Pipeline
-                  </div>
-                  
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 1 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-lg flex items-center justify-center text-red-650 dark:text-red-400 shrink-0">
-                      <AlertCircle className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">1. Intercept Fail</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Intercepts stdout test tracebacks and dependencies.</p>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 2 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-zinc-950 text-white dark:bg-zinc-900 dark:text-zinc-150 border border-zinc-900 dark:border-zinc-850 rounded-lg flex items-center justify-center text-zinc-400 shrink-0">
-                      <Sparkles className="h-4.5 w-4.5 fill-current text-white dark:text-zinc-950" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">2. Agentic Triage</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Gemini 1.5 Flash generates high-precision code patches.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Healing Subsystem Branch */}
-                <div className="w-[48%] flex flex-col items-center justify-between h-full">
-                  <div className="w-full text-center border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 py-2 rounded-lg font-mono text-[8.5px] uppercase font-bold tracking-wider text-zinc-650 dark:text-zinc-300 shadow-sm shrink-0">
-                    Autonomic Healing
-                  </div>
-                  
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 3 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                      <ShieldCheck className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">3. Operator Review</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Human review of diffs. Approval triggers automated injection.</p>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 4 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-450 shrink-0">
-                      <RefreshCw className="h-4.5 w-4.5 group-hover:animate-spin" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">4. Autonomic Heal</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Injects code edits and validates the pytest outcomes.</p>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 2. Storage Database Console Workspace View (tab: 'database')
-  const renderDatabaseWorkspace = () => {
-    return (
-      <div className="flex-1 p-8 overflow-y-auto h-full max-w-5xl mx-auto space-y-6 select-text no-scrollbar">
-        {/* Apple Style Monochromatic Header */}
-        <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl">
-              <Database className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">VibeCheck Database Storage</h2>
-              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">Query, Edit, and Reset local database schema parameters dynamically</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Database Info Banner */}
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl flex items-start space-x-3 text-xs leading-relaxed">
-          <Info className="h-4.5 w-4.5 text-zinc-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Zero-Binary SQLite/JSON Framework</span>
-            <p className="text-zinc-500 dark:text-zinc-450">
-              The application utilizes a transaction-safe local JSON storage core mapped to <code className="bg-zinc-200/50 dark:bg-zinc-900 px-1 py-0.5 rounded font-mono">db.json</code> in your workspace root. This ensures simultaneous pipeline trigger safety, sub-millisecond execution times, and complete portability across servers.
-            </p>
-          </div>
-        </div>
-
-        {/* DB Status Message */}
-        {dbStatusMsg.text && (
-          <div className={`p-3.5 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
-            dbStatusMsg.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' 
-              : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'
-          }`}>
-            <CheckCircle className="h-4 w-4 shrink-0" />
-            <span>{dbStatusMsg.text}</span>
-          </div>
-        )}
-
-        {/* JSON Database Viewer Panel */}
-        <div className="flex flex-col bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-xl overflow-hidden shadow-sm">
-          <div className="bg-zinc-50 border-b border-zinc-200/80 dark:bg-zinc-900/40 dark:border-zinc-900 px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Terminal className="h-4 w-4 text-zinc-500" />
-              <span className="font-mono text-xs text-zinc-800 dark:text-zinc-300 uppercase tracking-widest font-bold">db.json Terminal View</span>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleResetDb}
-                disabled={isResettingDb}
-                className="py-1.5 px-3 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-900/30 rounded font-mono text-[10px] uppercase font-bold tracking-wider flex items-center space-x-1.5 active:scale-[0.98] transition-transform duration-100 disabled:opacity-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>{isResettingDb ? 'Resetting...' : 'Reset Database to Seeds'}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 bg-zinc-50/30 dark:bg-zinc-950/50">
-            <textarea
-              readOnly
-              value={rawDbContent}
-              className="w-full h-96 p-4 bg-zinc-950 text-emerald-450 border border-zinc-900 rounded-lg font-mono text-[10.5px] select-text outline-none resize-none focus:ring-0 leading-relaxed scrollbar-thin overflow-y-auto"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 3. Credentials Manager Workspace View (tab: 'keys')
-  const renderCredentialsWorkspace = () => {
-    return (
-      <div className="flex-1 p-8 overflow-y-auto h-full max-w-5xl mx-auto space-y-6 select-text no-scrollbar">
-        {/* Apple Style Monochromatic Header */}
-        <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl">
-              <Key className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">VibeCheck Credentials Vault</h2>
-              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">Securely manage OpenAI, Google Gemini, and failover diagnostic API keys</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Status Indicators */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl flex items-center justify-between shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <Cpu className="h-4.5 w-4.5 text-zinc-400" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">OpenAI GPT-4o-mini status</span>
-                <span className="text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                  {credentialsConfigured.openai ? maskedKeys.openai : 'Not Configured (Fallback Mode)'}
-                </span>
-              </div>
-            </div>
-            <div>
-              {credentialsConfigured.openai ? (
-                <span className="inline-flex items-center px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 text-[9px] font-mono font-bold rounded border border-emerald-200 dark:border-emerald-900/30">
-                  ACTIVE
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 bg-zinc-100 dark:bg-zinc-900 text-zinc-500 text-[9px] font-mono rounded border border-zinc-200 dark:border-zinc-800">
-                  OFFLINE SIMULATOR
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl flex items-center justify-between shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <Cpu className="h-4.5 w-4.5 text-zinc-400" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">Google Gemini API status</span>
-                <span className="text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                  {credentialsConfigured.gemini ? maskedKeys.gemini : 'Not Configured (Fallback Mode)'}
-                </span>
-              </div>
-            </div>
-            <div>
-              {credentialsConfigured.gemini ? (
-                <span className="inline-flex items-center px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 text-[9px] font-mono font-bold rounded border border-emerald-200 dark:border-emerald-900/30">
-                  ACTIVE
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 bg-zinc-100 dark:bg-zinc-900 text-zinc-500 text-[9px] font-mono rounded border border-zinc-200 dark:border-zinc-800">
-                  OFFLINE SIMULATOR
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Credentials Form Message */}
-        {credStatusMsg.text && (
-          <div className={`p-3.5 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
-            credStatusMsg.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-450 dark:border-emerald-900/30' 
-              : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'
-          }`}>
-            <CheckCircle className="h-4 w-4 shrink-0" />
-            <span>{credStatusMsg.text}</span>
-          </div>
-        )}
-
-        {/* Google / OpenAI GCP-Style Keys Form */}
-        <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm space-y-6">
-          <div className="flex items-center space-x-2 border-b border-zinc-150 dark:border-zinc-900 pb-3">
-            <KeyRound className="h-4.5 w-4.5 text-zinc-500" />
-            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">Configure Local environment variables (.env)</h3>
-          </div>
-
-          <form onSubmit={handleSaveCredentials} className="space-y-5">
-            {/* OpenAI API Key Input */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300 block">
-                OpenAI API Key (OPENAI_API_KEY)
-              </label>
-              <div className="relative">
-                <input
-                  type={showKeys.openai ? 'text' : 'password'}
-                  value={credentials.openaiKey}
-                  onChange={(e) => setCredentials(prev => ({ ...prev, openaiKey: e.target.value }))}
-                  placeholder={credentialsConfigured.openai ? '••••••••••••••••••••••••••••••••' : 'sk-proj-...'}
-                  className="w-full py-2.5 pl-3.5 pr-10 bg-zinc-50/50 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus:border-zinc-850 dark:focus:border-zinc-200 rounded-lg text-xs font-mono outline-none transition-all duration-150 text-zinc-900 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKeys(prev => ({ ...prev, openai: !prev.openai }))}
-                  className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                >
-                  {showKeys.openai ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-                </button>
-              </div>
-              <p className="text-[9.5px] text-zinc-450 dark:text-zinc-500 font-mono">
-                Used to trigger high-fidelity GPT-4o-mini structured triage patches. Saves to the sandbox environment root directly.
-              </p>
-            </div>
-
-            {/* Gemini API Key Input */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300 block">
-                Google Gemini API Key (GEMINI_API_KEY)
-              </label>
-              <div className="relative">
-                <input
-                  type={showKeys.gemini ? 'text' : 'password'}
-                  value={credentials.geminiKey}
-                  onChange={(e) => setCredentials(prev => ({ ...prev, geminiKey: e.target.value }))}
-                  placeholder={credentialsConfigured.gemini ? '••••••••••••••••••••••••••••••••' : 'AIzaSy...'}
-                  className="w-full py-2.5 pl-3.5 pr-10 bg-zinc-50/50 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus:border-zinc-850 dark:focus:border-zinc-200 rounded-lg text-xs font-mono outline-none transition-all duration-150 text-zinc-900 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKeys(prev => ({ ...prev, gemini: !prev.gemini }))}
-                  className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                >
-                  {showKeys.gemini ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-                </button>
-              </div>
-              <p className="text-[9.5px] text-zinc-450 dark:text-zinc-500 font-mono">
-                Google Free-tier Gemini 2.5 Flash failover fallback diagnostics key. Triggers failover seamlessly if OpenAI hits quotas!
-              </p>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSavingKeys || (!credentials.openaiKey && !credentials.geminiKey)}
-                className={`py-2.5 px-6 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center space-x-2 transition-colors duration-150 active:scale-[0.98] ${
-                  isSavingKeys || (!credentials.openaiKey && !credentials.geminiKey) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <Save className="h-4 w-4 shrink-0" />
-                <span>{isSavingKeys ? 'Saving...' : 'Update & Hot-Reload Keys'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  // SaaS Custom Triage Form Panel
-  const renderCustomTriageConsole = () => {
-    return (
-      <div className="flex-1 p-8 overflow-y-auto h-full max-w-4xl mx-auto space-y-6 select-text no-scrollbar">
-        {/* Apple Style Monochromatic Header */}
-        <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">SaaS Custom Triage Console</h2>
-              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">Diagnose any raw trace logs and source code in a 100% secure, zero-trust sandbox</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Security Guard Notice */}
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl flex items-start space-x-3 text-xs leading-relaxed">
-          <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 animate-pulse" />
-          <div className="space-y-1">
-            <span className="font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Production Security Guard Engaged</span>
-            <p className="text-zinc-500 dark:text-zinc-400">
-              VibeCheck operates a zero-write execution sandbox for custom user data. Your files are **never** written to our servers. The AI generates patches which are presented here for your review and grilling chat, allowing you to securely copy or download the healed files to apply locally.
-            </p>
-          </div>
-        </div>
-
-        {/* Error message display */}
-        {customError && (
-          <div className="p-3.5 bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30 rounded-lg text-xs font-mono flex items-center space-x-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{customError}</span>
-          </div>
-        )}
-
-        {/* Form Submission Card */}
-        <form onSubmit={handleCustomDiagnose} className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm space-y-5">
-          {/* Job Name Input */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300 block">
-              Job / Service Name
-            </label>
-            <input
-              type="text"
-              required
-              value={customJobName}
-              onChange={(e) => setCustomJobName(e.target.value)}
-              placeholder="e.g. payment-gateway-deploy, main-billing-pipeline"
-              className="w-full py-2.5 px-3.5 bg-zinc-50/50 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus:border-zinc-850 dark:focus:border-zinc-200 rounded-lg text-xs font-mono outline-none transition-all duration-150 text-zinc-900 dark:text-white"
-            />
-          </div>
-
-          {/* Raw Logs Textarea */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300 block">
-              Raw Console Logs / Failure Tracebacks
-            </label>
-            <textarea
-              required
-              rows={6}
-              value={customLogOutput}
-              onChange={(e) => setCustomLogOutput(e.target.value)}
-              placeholder="Paste the stderr logs, AssertionError, ZeroDivisionError, SyntaxError traceback details here..."
-              className="w-full p-3.5 bg-zinc-50/50 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus:border-zinc-850 dark:focus:border-zinc-200 rounded-lg text-xs font-mono outline-none transition-all duration-150 text-zinc-900 dark:text-white leading-relaxed resize-y scrollbar-thin"
-            />
-          </div>
-
-          {/* Source Code Textarea */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-305 block">
-              Original Buggy Source Code (Optional)
-            </label>
-            <textarea
-              rows={8}
-              value={customSourceCode}
-              onChange={(e) => setCustomSourceCode(e.target.value)}
-              placeholder="Paste the contents of the buggy file here. If provided, the AI will generate a side-by-side git diff patch you can review and download..."
-              className="w-full p-3.5 bg-zinc-50/50 focus:bg-white dark:bg-zinc-900/50 dark:focus:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus:border-zinc-850 dark:focus:border-zinc-200 rounded-lg text-xs font-mono outline-none transition-all duration-150 text-zinc-900 dark:text-white leading-relaxed resize-y scrollbar-thin"
-            />
-          </div>
-
-          {/* Submit Trigger */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isDiagnosingCustom}
-              className={`w-full py-2.5 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-150 active:scale-[0.98] ${
-                isDiagnosingCustom ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {isDiagnosingCustom ? (
-                <>
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                  <span>AI is running multi-model diagnostics...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 shrink-0" />
-                  <span>Analyze & Generate Patch</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  };
-
-  // 4. Default Pipelines Three-Column Workspace View (tab: 'pipelines')
-  const renderPipelinesWorkspace = () => {
-    // Dynamic ADO Logs Slicing Helper
-    const getSlicedLogs = (build, stepId) => {
-      if (!build || !build.log_output) return "No logs available.";
-      
-      const rawLog = build.log_output;
-      
-      // Step 1: Environment Initialization
-      if (stepId === 'env') {
-        return `============================= ENVIRONMENT INITIALIZATION =============================
-Platform: win32 -- Python 3.10.2, pytest-7.4.0
-Root directory: C:\\Users\\mashw\\Desktop\\Open AI\\mock_project
-Configured modules: core/security.py, services/billing.py, services/report_engine.py
-Verification environment successfully loaded.
-Ready to run test suites...`;
-      }
-      
-      // Step 2: core/security.py
-      if (stepId === 'sec') {
-        if (build.status === 'SUCCESS') {
-          return `============================= VERIFYING core/security.py =============================
-tests/test_security.py .                                                 [ 33%]
-
-============================== 1 passed in 0.03s ==============================`;
-        }
-        
-        // If Scenario A (Cascading Zero Division)
-        if (rawLog.includes('ZeroDivisionError') || String(build.id) === '105' || String(build.id) === '106' || String(build.id) === '107' || build.target_scenario?.includes('Cascading')) {
-          return `============================= VERIFYING core/security.py =============================
-tests/test_security.py F                                                 [ 33%]
-
-================================== FAILURES ===================================
-______________________________ test_security_zero_scale _______________________
-
-    def test_security_zero_scale():
-        # Dynamic zero division vector: triggers crash in core/security.py.
->       assert validate_token("header.user:admin;scale:0.signature") is True
-
-tests/test_security.py:13: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-token = 'header.user:admin;scale:0.signature'
-
-    def validate_token(token: str) -> bool:
-        ...
-        try:
-            scale = int(scale_str)
-        except ValueError:
-            scale = 1
-            
-        # BUG: Division by zero when scale is 0.
->       factor = 100 / scale
-E       ZeroDivisionError: division by zero
-
-core/security.py:27: ZeroDivisionError
-============================== 1 failed in 0.05s ==============================`;
-        }
-        
-        // Default green for this step in other scenarios
-        return `============================= VERIFYING core/security.py =============================
-tests/test_security.py .                                                 [ 33%]
-
-============================== 1 passed in 0.03s ==============================`;
-      }
-      
-      // Step 3: services/billing.py
-      if (stepId === 'bill') {
-        if (build.status === 'SUCCESS') {
-          return `============================= VERIFYING services/billing.py =============================
-tests/test_billing.py .                                                  [ 66%]
-
-============================== 1 passed in 0.04s ==============================`;
-        }
-        
-        // Scenario B (Syntax Error)
-        if (rawLog.includes('SyntaxError') || String(build.id) === '103' || build.target_scenario?.includes('Syntax Error')) {
-          return `============================= VERIFYING services/billing.py =============================
-ImportError while importing test module 'C:\\Users\\mashw\\Desktop\\Open AI\\mock_project\\tests\\test_billing.py'.
-Directory import failed because BillingService has a compilation error.
-  File "C:\\Users\\mashw\\Desktop\\Open AI\\mock_project\\services\\billing.py", line 6
-    def process_payment(self, amount: float, token: str)
-                                                       ^
-SyntaxError: expected ':' to terminate method signature
-
-=========================== 1 error in 0.02s ===========================`;
-        }
-        
-        // Scenario A (Cascading Zero Division)
-        if (rawLog.includes('ZeroDivisionError') || String(build.id) === '105' || String(build.id) === '106' || String(build.id) === '107' || build.target_scenario?.includes('Cascading')) {
-          return `============================= VERIFYING services/billing.py =============================
-tests/test_billing.py F                                                  [ 66%]
-
-================================== FAILURES ===================================
-______________________________ test_billing_payment ___________________________
-Import dependency core/security.py failed because validate_token crashed.
-  File "core/security.py", line 27
-    factor = 100 / scale
-ZeroDivisionError: division by zero
-
-============================== 1 failed in 0.04s ==============================`;
-        }
-        
-        // Default green for this step in other scenarios
-        return `============================= VERIFYING services/billing.py =============================
-tests/test_billing.py .                                                  [ 66%]
-
-============================== 1 passed in 0.03s ==============================`;
-      }
-      
-      // Step 4: services/report_engine.py
-      if (stepId === 'rep') {
-        if (build.status === 'SUCCESS') {
-          return `============================= VERIFYING services/report_engine.py =============================
-tests/test_reports.py .                                                  [100%]
-
-============================== 1 passed in 0.04s ==============================`;
-        }
-        
-        // Scenario C (Logical Assertion Error) or Build 104
-        if (rawLog.includes('AssertionError') || String(build.id) === '104' || build.target_scenario?.includes('Logical')) {
-          return `============================= VERIFYING services/report_engine.py =============================
-tests/test_reports.py F                                                  [100%]
-
-================================== FAILURES ===================================
-________________________ test_compile_financials_report _______________________
-
-    def test_compile_financials_report():
-        ...
-        result = engine.compile_financials(transactions, "header.user:admin;scale:2.signature")
-        
-        assert result["total_cleared"] == 600.0
-        
-        # BUG: Logical assertion regression.
->       assert result["growth"] == 40.0
-E       AssertionError: assert 20.0 == 40.0
-E         -20.0
-E         +40.0
-
-tests/test_reports.py:16: AssertionError
-============================== 1 failed in 0.06s ==============================`;
-        }
-        
-        // Scenario B (Syntax Error) cascading
-        if (rawLog.includes('SyntaxError') || String(build.id) === '103' || build.target_scenario?.includes('Syntax Error')) {
-          return `============================= VERIFYING services/report_engine.py =============================
-ImportError while importing test module 'C:\\Users\\mashw\\Desktop\\Open AI\\mock_project\\tests\\test_reports.py'.
-Dependency services/billing.py has a compilation error.
-  File "services/billing.py", line 6
-    def process_payment(self, amount: float, token: str)
-SyntaxError: expected ':' to terminate method signature
-
-=========================== 1 error in 0.02s ===========================`;
-        }
-        
-        // Scenario A (Cascading Zero Division)
-        if (rawLog.includes('ZeroDivisionError') || String(build.id) === '105' || String(build.id) === '106' || String(build.id) === '107' || build.target_scenario?.includes('Cascading')) {
-          return `============================= VERIFYING services/report_engine.py =============================
-tests/test_reports.py F                                                  [100%]
-
-================================== FAILURES ===================================
-________________________ test_compile_financials_report _______________________
-Import dependency core/security.py failed because validate_token crashed.
-  File "core/security.py", line 27
-    factor = 100 / scale
-ZeroDivisionError: division by zero
-
-============================== 1 failed in 0.04s ==============================`;
-        }
-        
-        // Default green
-        return `============================= VERIFYING services/report_engine.py =============================
-tests/test_reports.py .                                                  [100%]
-
-============================== 1 passed in 0.03s ==============================`;
-      }
-
-      // Step 5: services/database.py
-      if (stepId === 'db') {
-        if (build.status === 'SUCCESS') {
-          return `============================= VERIFYING services/database.py =============================
-tests/test_database.py .                                                 [ 80%]
-
-============================== 1 passed in 0.03s ==============================`;
-        }
-
-        // Scenario D (Database pool exhaustion)
-        if (rawLog.includes('Connection pool exhausted') || build.target_scenario?.includes('Database') || build.target_scenario?.includes('Timeout')) {
-          return `============================= VERIFYING services/database.py =============================
-tests/test_database.py F                                                 [ 80%]
-
-================================== FAILURES ===================================
-___________________________ test_database_connection __________________________
-
-    def test_database_connection():
-        service = DatabaseService()
-        for i in range(5):
-            service.execute_query(f"SELECT {i}")
-            
->       service.execute_query("SELECT 6")
-
-tests/test_database.py:12: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-self = <services.database.DatabaseConnectionPool object at 0x0000021F38AC39D0>
-
-    def get_connection(self):
-        if self.active_connections >= self.size:
->           raise RuntimeError("TimeoutError: Connection pool exhausted. Too many active cursors.")
-E           RuntimeError: TimeoutError: Connection pool exhausted. Too many active cursors.
-
-services/database.py:9: RuntimeError
-============================== 1 failed in 0.04s ==============================`;
-        }
-
-        // Scenario A (Cascading division by zero)
-        if (rawLog.includes('ZeroDivisionError') || build.target_scenario?.includes('Cascading')) {
-          return `============================= VERIFYING services/database.py =============================
-tests/test_database.py F                                                 [ 80%]
-
-================================== FAILURES ===================================
-___________________________ test_database_connection __________________________
-Import dependency core/security.py failed because validate_token crashed.
-  File "core/security.py", line 27
-    factor = 100 / scale
-ZeroDivisionError: division by zero
-
-============================== 1 failed in 0.04s ==============================`;
-        }
-
-        return `============================= VERIFYING services/database.py =============================
-tests/test_database.py .                                                 [ 80%]
-
-============================== 1 passed in 0.03s ==============================`;
-      }
-
-      // Step 6: services/payment_gateway.py
-      if (stepId === 'pay') {
-        if (build.status === 'SUCCESS') {
-          return `============================= VERIFYING services/payment_gateway.py =============================
-tests/test_payment.py .                                                  [100%]
-
-============================== 1 passed in 0.02s ==============================`;
-        }
-
-        // Scenario E (Payment webhook KeyError)
-        if (rawLog.includes('KeyError') || build.target_scenario?.includes('Webhook') || build.target_scenario?.includes('Payment') || build.target_scenario?.includes('KeyError')) {
-          return `============================= VERIFYING services/payment_gateway.py =============================
-tests/test_payment.py F                                                  [100%]
-
-================================== FAILURES ===================================
-__________________________ test_payment_webhook_keys __________________________
-
-    def test_payment_webhook_keys():
-        gateway = PaymentGatewayService()
-        invalid_payload = {"transaction": "tx_9921", "amount": 150.0}
-        
->       assert gateway.parse_webhook_payload(invalid_payload) == "default_merchant"
-
-tests/test_payment.py:10: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-self = <services.payment_gateway.PaymentGatewayService object at 0x0000021F38AC40B0>
-payload = {'transaction': 'tx_9921', 'amount': 150.0}
-
-    def parse_webhook_payload(self, payload):
->       return payload["meta"]["merchant_id"]
-E       KeyError: 'meta'
-
-services/payment_gateway.py:11: KeyError
-============================== 1 failed in 0.03s ==============================`;
-        }
-
-        // Scenario A or B cascading
-        if (rawLog.includes('ZeroDivisionError') || build.target_scenario?.includes('Cascading') || rawLog.includes('SyntaxError') || build.target_scenario?.includes('Syntax Error')) {
-          return `============================= VERIFYING services/payment_gateway.py =============================
-tests/test_payment.py F                                                  [100%]
-
-================================== FAILURES ===================================
-Import error: Dependency billing or security failed.
-  File "services/billing.py", line 6
-    def process_payment(self, amount: float, token: str)
-SyntaxError: expected ':' to terminate method signature
-
-=========================== 1 error in 0.02s ===========================`;
-        }
-
-        return `============================= VERIFYING services/payment_gateway.py =============================
-tests/test_payment.py .                                                  [100%]
-
-================-------------- 1 passed in 0.02s ==============================`;
-      }
-      
-      return rawLog;
-    };
-
-    // Dynamic ADO Stages progress builder
-    const renderStagesTree = (build) => {
-      const isSuccess = build.status === 'SUCCESS';
-      const isTriage = build.status === 'PENDING_APPROVAL' || build.status === 'FAILED';
-      
-      // Determine step statuses dynamically based on failing scenarios
-      let s1 = 'passed';
-      let s2 = 'passed';
-      let s3 = 'passed';
-      let s4 = 'passed';
-      let s5 = 'passed';
-      let s6 = 'passed';
-
-      if (isTriage || build.status === 'HEALING') {
-        if (build.target_scenario?.includes('Syntax Error') || String(build.id) === '103') {
-          s3 = 'failed';
-          s4 = 'failed'; // Cascade imports
-          s6 = 'failed'; // Cascade imports to payment gateway
-        } else if (build.target_scenario?.includes('Cascading') || String(build.id) === '105' || String(build.id) === '106' || String(build.id) === '107') {
-          s2 = 'failed';
-          s3 = 'failed';
-          s4 = 'failed'; // Cascade divisions
-          s5 = 'failed'; // Cascade divisions to db
-          s6 = 'failed'; // Cascade divisions to payment
-        } else if (build.target_scenario?.includes('Logical') || String(build.id) === '104') {
-          s4 = 'failed'; // Assertion typo
-        } else if (build.target_scenario?.includes('Database') || build.target_scenario?.includes('Timeout')) {
-          s5 = 'failed'; // Database leak
-        } else if (build.target_scenario?.includes('KeyError') || build.target_scenario?.includes('Webhook') || build.target_scenario?.includes('Payment')) {
-          s6 = 'failed'; // Webhook KeyError
-        }
-      }
-
-      const stages = [
-        { name: '1. Initialize Environment & Packages', status: s1, details: 'Verified Node.js environment (v22.13.1) and Python packages successfully.' },
-        { name: '2. Verify core/security.py (Token Validator)', status: s2, details: s2 === 'passed' ? 'Core security token parsing and math division tests verified.' : 'CRITICAL FAILURE: ZeroDivisionError inside validate_token.' },
-        { name: '3. Verify services/billing.py (Payment Gateway)', status: s3, details: s3 === 'passed' ? 'Billing module payment gateway compiles and validates successfully.' : s3 === 'failed' && s2 === 'failed' ? 'CASCADING FAILURE: Import dependency core/security.py failed.' : 'CRITICAL FAILURE: SyntaxError missing mandatory method colon (:).' },
-        { name: '4. Verify services/report_engine.py (Analytics Suite)', status: s4, details: s4 === 'passed' ? 'Compiled reporting spreadsheets and assertion tests validated.' : s4 === 'failed' && s2 === 'failed' ? 'CASCADING FAILURE: Import dependency core/security.py failed.' : 'CRITICAL FAILURE: AssertionError on growth calculation expected 40.0.' },
-        { name: '5. Verify services/database.py (Database Connection Pool)', status: s5, details: s5 === 'passed' ? 'Database cursors, connections lease and release connection tests passing.' : s5 === 'failed' && s2 === 'failed' ? 'CASCADING FAILURE: Import dependency core/security.py failed.' : 'CRITICAL FAILURE: TimeoutError: Connection pool exhausted. Too many active cursors.' },
-        { name: '6. Verify services/payment_gateway.py (Payment Webhook)', status: s6, details: s6 === 'passed' ? 'Payment provider webhooks and webhook refund processors operating cleanly.' : s6 === 'failed' && s2 === 'failed' ? 'CASCADING FAILURE: Import dependency core/security.py failed.' : 'CRITICAL FAILURE: KeyError: "meta" is absent in webhook callbacks payload.' }
-      ];
-
-      return (
-        <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 rounded-xl p-5 space-y-4 max-w-4xl select-text">
-          <div className="flex items-center space-x-2 border-b border-zinc-200 dark:border-zinc-900 pb-2">
-            <Activity className="h-4 w-4 text-zinc-500" />
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Stages / Jobs Execution</h4>
-          </div>
-
-          <div className="space-y-4 font-mono text-xs">
-            {stages.map((stage, idx) => (
-              <div key={idx} className="flex items-start space-x-3.5">
-                <div className="mt-0.5 shrink-0 flex items-center justify-center">
-                  {stage.status === 'passed' ? (
-                    <div className="h-4 w-4 rounded-full bg-emerald-50 border border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-900/30 flex items-center justify-center">
-                      <CheckCircle className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                  ) : (
-                    <div className="h-4 w-4 rounded-full bg-red-50 border border-red-300 dark:bg-red-950/20 dark:border-red-900/30 flex items-center justify-center animate-pulse">
-                      <AlertCircle className="h-2.5 w-2.5 text-red-600 dark:text-red-400" />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-0.5">
-                  <span className={`font-bold text-[11px] uppercase ${stage.status === 'passed' ? 'text-zinc-800 dark:text-zinc-200' : 'text-red-700 dark:text-red-450'}`}>
-                    {stage.name}
-                  </span>
-                  <p className="text-[10px] text-zinc-450 dark:text-zinc-500 leading-relaxed font-sans">{stage.details}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    // Dynamic ADO logs step console
-    const renderAdoLogsWorkspace = (build) => {
-      const isSuccess = build.status === 'SUCCESS';
-      const isTriage = build.status === 'PENDING_APPROVAL' || build.status === 'FAILED';
-      
-      const isScenarioA = build.log_output?.includes('ZeroDivisionError') || build.target_scenario?.includes('Cascading');
-      const isScenarioB = build.log_output?.includes('SyntaxError') || build.target_scenario?.includes('Syntax Error');
-      const isScenarioC = build.log_output?.includes('AssertionError') || build.target_scenario?.includes('Logical');
-      const isScenarioD = build.log_output?.includes('Connection pool exhausted') || build.target_scenario?.includes('Database') || build.target_scenario?.includes('Timeout');
-      const isScenarioE = build.log_output?.includes('KeyError') || build.target_scenario?.includes('Webhook') || build.target_scenario?.includes('Payment');
-
-      const steps = [
-        { id: 'env', name: '1. Initialize Environment', status: 'passed' },
-        { id: 'sec', name: '2. Verify core/security.py', status: !isTriage || (!isScenarioA) ? 'passed' : 'failed' },
-        { id: 'bill', name: '3. Verify services/billing.py', status: !isTriage || (!isScenarioA && !isScenarioB) ? 'passed' : 'failed' },
-        { id: 'rep', name: '4. Verify services/report_engine.py', status: !isTriage || (!isScenarioA && !isScenarioB && !isScenarioC) ? 'passed' : 'failed' },
-        { id: 'db', name: '5. Verify services/database.py', status: !isTriage || (!isScenarioA && !isScenarioD) ? 'passed' : 'failed' },
-        { id: 'pay', name: '6. Verify services/payment_gateway.py', status: !isTriage || (!isScenarioA && !isScenarioB && !isScenarioE) ? 'passed' : 'failed' }
-      ];
-
-      return (
-        <div className="flex-1 flex overflow-hidden w-full h-full divide-x divide-zinc-200 dark:divide-zinc-900 -mx-6 -mb-6">
-          {/* Logs Left Sidebar: Steps Navigator (Width: 220px) */}
-          <div className="w-[220px] shrink-0 h-full flex flex-col p-4 space-y-2 bg-zinc-50/50 dark:bg-zinc-950/10 overflow-y-auto no-scrollbar border-r border-zinc-200 dark:border-zinc-900">
-            <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest px-2 pb-1.5 block">Job Steps</span>
-            {steps.map((step) => (
-              <button
-                key={step.id}
-                onClick={() => setSelectedLogStep(step.id)}
-                className={`w-full py-2 px-3 rounded-lg text-left font-mono text-[10px] font-bold transition-all flex items-center justify-between border ${
-                  selectedLogStep === step.id 
-                    ? 'bg-white border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 text-zinc-900 dark:text-white shadow-sm' 
-                    : 'bg-transparent border-transparent text-zinc-500 hover:bg-zinc-100/40 dark:hover:bg-zinc-900/10 hover:text-zinc-700 dark:hover:text-zinc-300'
-                }`}
-              >
-                <span className="truncate">{step.name}</span>
-                {step.status === 'passed' ? (
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-450 shrink-0 ml-1.5" />
-                ) : (
-                  <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0 ml-1.5 animate-pulse" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Logs Right Panel: Sliced Console logs */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-6 bg-white dark:bg-black">
-            <ConsoleLog logOutput={getSlicedLogs(build, selectedLogStep)} />
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <div className="flex-1 flex overflow-hidden w-full h-full bg-white text-zinc-900 dark:bg-black dark:text-zinc-50 transition-colors duration-250">
-        
-        {/* Column 1: Stable Fixed-width Builds History Sidebar */}
-        <div className="w-64 border-r border-zinc-200/80 dark:border-zinc-900 shrink-0 h-full flex flex-col">
-          <Sidebar
-            builds={builds}
-            selectedBuild={selectedBuild}
-            onSelectBuild={handleSelectBuild}
-            onTriggerBuild={handleTriggerBuild}
-            isTriggering={isTriggering}
-          />
-        </div>
-
-        {/* Master Workspace Detail Panel */}
-        <div className="flex-1 flex overflow-hidden h-full bg-white dark:bg-black">
-          
-          {selectedBuild === 'custom_triage' ? (
-            renderCustomTriageConsole()
-          ) : selectedBuild ? (
-            <div className="flex-1 flex flex-col p-6 min-w-0 h-full overflow-hidden transition-colors duration-200">
-              
-              {/* Azure DevOps Breadcrumb & Metadata Panel */}
-              <div className="border-b border-zinc-200 dark:border-zinc-900/80 pb-3 mb-4 shrink-0 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 font-mono text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">
-                    <span>Pipelines</span>
-                    <ChevronRight className="h-3 w-3" />
-                    <span>VibeCheck CI-CD</span>
-                    <ChevronRight className="h-3 w-3" />
-                    <span className="text-zinc-900 dark:text-white">Run #{selectedBuild.id}</span>
-                  </div>
-                  
-                  {/* Flat ADO status pill */}
-                  {selectedBuild.status === 'SUCCESS' ? (
-                    <span className="text-[9px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 px-2 py-0.5 rounded border border-emerald-250 dark:border-emerald-900/30">SUCCEEDED</span>
-                  ) : selectedBuild.status === 'PENDING_APPROVAL' ? (
-                    <span className="text-[9px] font-mono font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 px-2 py-0.5 rounded border border-amber-250 dark:border-amber-900/30 animate-pulse">NEEDS ATTENTION</span>
-                  ) : selectedBuild.status === 'HEALING' ? (
-                    <span className="text-[9px] font-mono font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 animate-pulse">HEALING RUN</span>
-                  ) : (
-                    <span className="text-[9px] font-mono font-bold bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450 px-2 py-0.5 rounded border border-red-250 dark:border-red-900/30">FAILED</span>
-                  )}
-                </div>
-
-                {/* ADO Metadata ribbon */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-mono text-zinc-450 dark:text-zinc-500">
-                  <div className="flex items-center space-x-1">
-                    <GitBranch className="h-3.5 w-3.5" />
-                    <span className="font-bold text-zinc-700 dark:text-zinc-300">main</span>
-                  </div>
-                  <span>•</span>
-                  <span>Commit: <span className="font-bold text-zinc-700 dark:text-zinc-300">a3f4c82</span></span>
-                  <span>•</span>
-                  <span>Triggered by: <span className="font-bold text-zinc-700 dark:text-zinc-300">HITL Operator</span></span>
-                  <span>•</span>
-                  <span>Duration: <span className="font-bold text-zinc-700 dark:text-zinc-300">0.15s</span></span>
-                  <span>•</span>
-                  <span>Time: <span className="font-bold text-zinc-700 dark:text-zinc-300">{new Date(selectedBuild.timestamp).toLocaleTimeString()}</span></span>
-                </div>
-              </div>
-
-              {/* Azure DevOps Style Header Tab deck */}
-              <div className="flex border-b border-zinc-200 dark:border-zinc-900/80 pb-0.5 mb-5 shrink-0">
-                <button
-                  onClick={() => setActiveSubTab('summary')}
-                  className={`pb-2.5 px-4 font-mono text-xs uppercase font-bold tracking-wider transition-all border-b-2 -mb-[2px] flex items-center space-x-2 relative ${
-                    activeSubTab === 'summary'
-                      ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
-                      : 'border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-                  }`}
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  <span>Summary</span>
-                  {selectedBuild.status === 'PENDING_APPROVAL' && (
-                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => setActiveSubTab('logs')}
-                  className={`pb-2.5 px-4 font-mono text-xs uppercase font-bold tracking-wider transition-all border-b-2 -mb-[2px] flex items-center space-x-2 ${
-                    activeSubTab === 'logs'
-                      ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
-                      : 'border-transparent text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-                  }`}
-                >
-                  <Terminal className="h-3.5 w-3.5" />
-                  <span>Logs</span>
-                </button>
-              </div>
-
-              {/* Dynamic Sub-Tab Render Panels */}
-              <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
-                
-                {activeSubTab === 'summary' ? (
-                  /* Tab 1: ADO Run Summary View - Stages Tree + AI Diagnostics Card + Spacious Diff comparison */
-                  <div className="flex-1 overflow-y-auto pr-1 space-y-6 scrollbar-thin">
-                    
-                    {/* Stages execution checklist progress block */}
-                    {renderStagesTree(selectedBuild)}
-
-                    {/* AI Diagnosis Hotfix description panel */}
-                    {selectedBuild.patch && (
-                      <div className="max-w-4xl space-y-6">
-                        <DiagnosticCard
-                          patch={selectedBuild.patch}
-                          onApprove={handleApprovePatch}
-                          onReject={handleRejectPatch}
-                          buildStatus={selectedBuild.status}
-                          buildId={selectedBuild.id}
-                          onDiagnose={handleDiagnose}
-                        />
-
-                        {selectedBuild.status !== 'HEALING' && (
-                          <div className="pb-6">
-                            <DiffViewer
-                              filePath={selectedBuild.patch.file_path}
-                              originalCode={selectedBuild.patch.original_code}
-                              patchedCode={selectedBuild.patch.patched_code}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {!selectedBuild.patch && (selectedBuild.status === 'SUCCESS' || selectedBuild.status === 'FAILED') && (
-                      <div className="max-w-4xl">
-                        <DiagnosticCard
-                          patch={null}
-                          onApprove={handleApprovePatch}
-                          onReject={handleRejectPatch}
-                          buildStatus={selectedBuild.status}
-                          buildId={selectedBuild.id}
-                          onDiagnose={handleDiagnose}
-                        />
-                      </div>
-                    )}
-
-                  </div>
-                ) : (
-                  /* Tab 2: ADO Logs View - Steps selector + Full terminal log stdout console */
-                  renderAdoLogsWorkspace(selectedBuild)
-                )}
-
-              </div>
-
-            </div>
-          ) : (
-            /* Loading Skeleton View */
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-400 dark:text-zinc-550 font-mono">
-              <div className="w-8 h-8 border-2 border-zinc-300 dark:border-zinc-700 border-t-zinc-950 dark:border-t-white rounded-full animate-spin mb-3.5" />
-              <p className="text-[10px] uppercase tracking-widest">Hydrating Enterprise Workspace...</p>
-            </div>
-          )}
-
-        </div>
-
-      </div>
-    );
+  const scrollTo = (id) => {
+    setMobileNavOpen(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
-    <Layout
-      systemConfig={systemConfig}
-      isDarkMode={isDarkMode}
-      onToggleTheme={toggleTheme}
-      activeTab={activeTab}
-      onChangeTab={(tab) => {
-        console.log(`[Router] Changed active view tab to: ${tab}`);
-        setActiveTab(tab);
-      }}
-    >
-      <div className="flex-1 flex overflow-hidden w-full h-full relative">
-        {activeTab === 'pipelines' && renderPipelinesWorkspace()}
-        {activeTab === 'agent' && renderAgentWorkspace()}
-        {activeTab === 'database' && renderDatabaseWorkspace()}
-        {activeTab === 'keys' && renderCredentialsWorkspace()}
-        {activeTab === 'guide' && <UserGuide />}
-        {activeTab === 'repos' && (
-          <RepoManager 
-            onNavigateToSandbox={(repo, sandboxId, diagnosis) => {
-              setSelectedRepoForConsole(repo);
-              setSandboxConfig({ repo, sandboxId: sandboxId || repo.sandboxId || null, diagnosis });
-              setActiveTab('sandbox');
-            }} 
-          />
-        )}
-        {activeTab === 'execution' && (
-          <PipelineConsole 
-            selectedRepo={selectedRepoForConsole}
-            onNavigateToSandbox={(repo, sandboxId, diagnosis) => {
-              setSandboxConfig({ repo, sandboxId, diagnosis });
-              setActiveTab('sandbox');
-            }}
-          />
-        )}
-        {activeTab === 'sandbox' && (
-          <SandboxWorkspace 
-            sandboxConfig={sandboxConfig}
-            onNavigateToRepos={() => {
-              setSandboxConfig(null);
-              setSelectedRepoForConsole(null);
-              setActiveTab('repos');
-            }}
-          />
-        )}
+    <div className="landing-page">
+      <Head>
+        <title>VibeCheck AI — Autonomous Self-Healing CI/CD Platform</title>
+        <meta
+          name="description"
+          content="Ship faster with zero downtime. VibeCheck AI detects pipeline failures, diagnoses root causes with AI, patches code autonomously, and opens verified Pull Requests — all in seconds."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
+
+      {/* ============ FLOATING NAVIGATION ============ */}
+      <nav className={`landing-nav ${navScrolled ? 'scrolled' : ''}`}>
+        <div className="nav-inner">
+          <a href="#" className="nav-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <img src="/logo.jpg" alt="VibeCheck AI Logo" />
+            <span className="nav-logo-text">VibeCheck AI</span>
+          </a>
+
+          <ul className="nav-links">
+            <li><a href="#features" onClick={(e) => { e.preventDefault(); scrollTo('features'); }}>Features</a></li>
+            <li><a href="#how-it-works" onClick={(e) => { e.preventDefault(); scrollTo('how-it-works'); }}>How it works</a></li>
+            <li><a href="#integrations" onClick={(e) => { e.preventDefault(); scrollTo('integrations'); }}>Integrations</a></li>
+          </ul>
+
+          <div className="nav-actions">
+            <a href="/console/pipeline" className="btn-primary">Go to console</a>
+          </div>
+
+          <button
+            className="nav-hamburger"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open menu"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Nav Overlay */}
+      <div className={`mobile-nav-overlay ${mobileNavOpen ? 'open' : ''}`}>
+        <button className="mobile-nav-close" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">✕</button>
+        <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo('features'); }}>Features</a>
+        <a href="#how-it-works" onClick={(e) => { e.preventDefault(); scrollTo('how-it-works'); }}>How it works</a>
+        <a href="#integrations" onClick={(e) => { e.preventDefault(); scrollTo('integrations'); }}>Integrations</a>
+        <a href="/console/pipeline" className="btn-primary btn-primary-lg" style={{ marginTop: 20 }}>Go to console</a>
       </div>
-    </Layout>
+
+      {/* ============ HERO ============ */}
+      <section className="hero-section">
+        <div className="landing-container">
+          <h1 className="hero-title">
+            Your CI/CD<br />
+            <span className="gradient-text">heals itself.</span>
+          </h1>
+
+          <p className="hero-subtitle">
+            VibeCheck AI watches your pipelines, detects failures the moment they happen,
+            diagnoses root causes with AI, generates precision patches, and opens verified
+            Pull Requests — all autonomously, in seconds.
+          </p>
+
+          <div className="hero-actions">
+            <a href="/console/pipeline" className="btn-primary btn-primary-lg">
+              Go to console
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="#how-it-works" className="btn-secondary" onClick={(e) => { e.preventDefault(); scrollTo('how-it-works'); }}>
+              See how it works
+            </a>
+          </div>
+
+          <div className="hero-stats">
+            <div className="hero-stat">
+              <div className="hero-stat-value">10x</div>
+              <div className="hero-stat-label">Faster Bug Resolution</div>
+            </div>
+            <div className="hero-stat">
+              <div className="hero-stat-value">93%</div>
+              <div className="hero-stat-label">Auto-Heal Success</div>
+            </div>
+            <div className="hero-stat">
+              <div className="hero-stat-value">&lt;30s</div>
+              <div className="hero-stat-label">Time to Patch</div>
+            </div>
+            <div className="hero-stat">
+              <div className="hero-stat-value">0</div>
+              <div className="hero-stat-label">Manual Interventions</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ PRODUCT SHOWCASE ============ */}
+      <section className="showcase-section">
+        <div className="landing-container reveal">
+          <div className="showcase-mockup">
+            <div className="mockup-chrome">
+              <span className="mockup-dot red" />
+              <span className="mockup-dot yellow" />
+              <span className="mockup-dot green" />
+              <span className="mockup-url">vibecheck.ai / pipeline / console</span>
+            </div>
+            <div className="mockup-body">
+              <div className="mockup-terminal">
+                <div className="line"><span className="prompt">❯</span> <span className="cmd">vibecheck pipeline run --repo enterprise-api</span></div>
+                <div className="line"><span className="info">⬤</span> Cloning repository into sandbox container...</div>
+                <div className="line"><span className="info">⬤</span> Running install → build → test pipeline stages...</div>
+                <div className="line"><span className="error">✖ STAGE FAILED:</span> test — 3 assertions failed in services/auth.js</div>
+                <div className="line"><span className="ai">🧠 AI DIAGNOSIS:</span> Root cause identified → stale JWT secret rotation</div>
+                <div className="line"><span className="ai">🧠 PATCH GENERATED:</span> services/auth.js — 12 lines replaced</div>
+                <div className="line"><span className="success">✓ PATCH APPLIED</span> → re-running test suite inside sandbox...</div>
+                <div className="line"><span className="success">✓ ALL STAGES PASSED</span> — <span className="orange">PR #247 opened</span> on github.com/org/enterprise-api</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FEATURES ============ */}
+      <section className="features-section" id="features">
+        <div className="landing-container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">Capabilities</div>
+            <h2 className="section-title">
+              Everything your<br />pipeline needs.
+            </h2>
+            <p className="section-subtitle">
+              A complete autonomous DevOps AI platform that detects, diagnoses, patches, and ships — without waking you up at 3 AM.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <div className="feature-card reveal">
+              <div className="feature-icon violet">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-5"/></svg>
+              </div>
+              <h3 className="feature-card-title">Smart Pipeline Monitor</h3>
+              <p className="feature-card-desc">Real-time surveillance of your CI/CD pipelines. Detects failures across Install, Build, and Test stages the instant they occur.</p>
+            </div>
+
+            <div className="feature-card reveal">
+              <div className="feature-icon magenta">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/></svg>
+              </div>
+              <h3 className="feature-card-title">AI Root Cause Analysis</h3>
+              <p className="feature-card-desc">Multi-model AI engine powered by OpenAI and Gemini pinpoints exact failure origins with double-pass contextual log analysis.</p>
+            </div>
+
+            <div className="feature-card reveal">
+              <div className="feature-icon orange">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+              </div>
+              <h3 className="feature-card-title">Precision Code Patching</h3>
+              <p className="feature-card-desc">Generates surgical git-style diffs targeting only the broken lines. Fuzzy block-matching ensures patches apply cleanly every time.</p>
+            </div>
+
+            <div className="feature-card reveal">
+              <div className="feature-icon coral">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m6 8 4 4-4 4"/><line x1="12" y1="16" x2="18" y2="16"/></svg>
+              </div>
+              <h3 className="feature-card-title">Sandboxed Execution</h3>
+              <p className="feature-card-desc">Patches are applied and tested inside isolated Docker containers. Your production environment is never touched until verification passes.</p>
+            </div>
+
+            <div className="feature-card reveal">
+              <div className="feature-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+              </div>
+              <h3 className="feature-card-title">GitHub Native Integration</h3>
+              <p className="feature-card-desc">Full OAuth flow, auto branch creation, PR submissions with unified diffs, diagnostic reports, and verification proofs attached.</p>
+            </div>
+
+            <div className="feature-card reveal">
+              <div className="feature-icon green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/></svg>
+              </div>
+              <h3 className="feature-card-title">AI Chat Companion</h3>
+              <p className="feature-card-desc">Conversational debugging with your AI copilot. Discuss failures, explore alternatives, then approve fixes — all within the same session.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ GRADIENT SPOTLIGHT CARDS ============ */}
+      <section className="spotlight-section">
+        <div className="landing-container">
+          <div className="spotlight-grid">
+            <div className="spotlight-card violet reveal">
+              <div className="spotlight-card-icon">🧬</div>
+              <h3 className="spotlight-card-title">Multi-Model<br />Fallback Engine</h3>
+              <p className="spotlight-card-desc">Cascading AI models with automatic timeout failover. If one model is slow, the next picks up — guaranteed sub-30s diagnosis.</p>
+            </div>
+            <div className="spotlight-card magenta reveal">
+              <div className="spotlight-card-icon">🔒</div>
+              <h3 className="spotlight-card-title">Zero-Trust<br />Security</h3>
+              <p className="spotlight-card-desc">Path traversal interceptors, static command execution, and no-write server sandboxes. Your code is untouchable by design.</p>
+            </div>
+            <div className="spotlight-card orange reveal">
+              <div className="spotlight-card-icon">⚡</div>
+              <h3 className="spotlight-card-title">Real-Time<br />Log Streaming</h3>
+              <p className="spotlight-card-desc">Server-Sent Events push every pipeline log line to your browser as it happens. Watch your builds heal live.</p>
+            </div>
+            <div className="spotlight-card coral reveal">
+              <div className="spotlight-card-icon">🚀</div>
+              <h3 className="spotlight-card-title">Controlled<br />Promotion</h3>
+              <p className="spotlight-card-desc">Twin sandbox verification, unified diff comparison, and one-click PR creation. Ship confidently with full audit trails.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ HOW IT WORKS — TREE STRUCTURE ============ */}
+      <section className="workflow-section" id="how-it-works">
+        <div className="landing-container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">Workflow</div>
+            <h2 className="section-title">
+              From failure to<br />fix in seconds.
+            </h2>
+            <p className="section-subtitle">
+              VibeCheck AI orchestrates the complete self-healing pipeline — no human needed in the loop.
+            </p>
+          </div>
+
+          <div className="pipeline-tree reveal">
+            {/* Root node */}
+            <div className="tree-row tree-root">
+              <div className="tree-node root-node">
+                <div className="tree-node-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div className="tree-node-content">
+                  <span className="tree-node-label">git push origin main</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Connector down */}
+            <div className="tree-connector-v" />
+
+            {/* Pipeline stages row */}
+            <div className="tree-row tree-branches">
+              <div className="tree-branch">
+                <div className="tree-connector-h left" />
+                <div className="tree-node stage-node install">
+                  <div className="tree-node-dot install" />
+                  <div className="tree-node-content">
+                    <span className="tree-node-title">Install</span>
+                    <span className="tree-node-meta">npm install</span>
+                  </div>
+                  <span className="tree-badge success">✓ PASS</span>
+                </div>
+              </div>
+              <div className="tree-branch">
+                <div className="tree-connector-h mid" />
+                <div className="tree-node stage-node build">
+                  <div className="tree-node-dot build" />
+                  <div className="tree-node-content">
+                    <span className="tree-node-title">Build</span>
+                    <span className="tree-node-meta">npm run build</span>
+                  </div>
+                  <span className="tree-badge success">✓ PASS</span>
+                </div>
+              </div>
+              <div className="tree-branch">
+                <div className="tree-connector-h right" />
+                <div className="tree-node stage-node test">
+                  <div className="tree-node-dot test-fail" />
+                  <div className="tree-node-content">
+                    <span className="tree-node-title">Test</span>
+                    <span className="tree-node-meta">npm test</span>
+                  </div>
+                  <span className="tree-badge fail">✖ FAIL</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Connector down from test fail */}
+            <div className="tree-connector-v fail-line" />
+
+            {/* AI Diagnosis */}
+            <div className="tree-row">
+              <div className="tree-node ai-node">
+                <div className="tree-node-icon ai-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/></svg>
+                </div>
+                <div className="tree-node-content">
+                  <span className="tree-node-title">AI Diagnosis</span>
+                  <span className="tree-node-meta">Root cause: stale JWT secret in auth.js:42</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="tree-connector-v ai-line" />
+
+            {/* Patch & Verify */}
+            <div className="tree-row">
+              <div className="tree-node patch-node">
+                <div className="tree-node-icon patch-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+                </div>
+                <div className="tree-node-content">
+                  <span className="tree-node-title">Patch &amp; Verify</span>
+                  <span className="tree-node-meta">12 lines replaced → all tests re-passed in sandbox</span>
+                </div>
+                <span className="tree-badge success">✓ HEALED</span>
+              </div>
+            </div>
+
+            <div className="tree-connector-v success-line" />
+
+            {/* Ship to GitHub */}
+            <div className="tree-row">
+              <div className="tree-node ship-node">
+                <div className="tree-node-icon ship-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                </div>
+                <div className="tree-node-content">
+                  <span className="tree-node-title">Ship to GitHub</span>
+                  <span className="tree-node-meta">PR #247 opened with diff, diagnosis &amp; proof</span>
+                </div>
+                <span className="tree-badge merged">⬤ PR OPENED</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ INTEGRATIONS ============ */}
+      <section className="integrations-section" id="integrations">
+        <div className="landing-container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">Integrations</div>
+            <h2 className="section-title">
+              Works with your stack.
+            </h2>
+            <p className="section-subtitle">
+              VibeCheck connects directly with your existing tools and workflows.
+            </p>
+          </div>
+          <div className="integrations-logos reveal">
+            {/* GitHub */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/></svg>
+              GitHub
+            </div>
+            {/* Docker — whale icon */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.186m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.185.185 0 0 0-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.185.185 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 0 0 .185-.185V9.006a.185.185 0 0 0-.185-.186H5.136a.186.186 0 0 0-.186.185v1.888c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.186v1.887c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 0 0-.75.748 11.687 11.687 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.228 12.228 0 0 0 3.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg>
+              Docker
+            </div>
+            {/* Node.js */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.998 24c-.321 0-.641-.084-.922-.247l-2.936-1.737c-.438-.245-.224-.332-.08-.383.585-.203.703-.25 1.328-.604.065-.037.151-.023.218.017l2.256 1.339a.294.294 0 0 0 .272 0l8.795-5.076a.277.277 0 0 0 .134-.238V6.921a.282.282 0 0 0-.137-.242l-8.791-5.072a.278.278 0 0 0-.271 0L3.075 6.68a.284.284 0 0 0-.139.241v10.15a.27.27 0 0 0 .138.236l2.409 1.392c1.307.654 2.108-.116 2.108-.89V7.787c0-.142.114-.253.256-.253h1.115c.139 0 .255.112.255.253v10.021c0 1.745-.95 2.745-2.604 2.745-.508 0-.909 0-2.026-.551L2.28 18.675a1.857 1.857 0 0 1-.922-1.604V6.921c0-.659.353-1.275.922-1.603L11.075.242a1.928 1.928 0 0 1 1.846 0l8.794 5.076c.57.329.924.944.924 1.603v10.15a1.86 1.86 0 0 1-.924 1.604l-8.794 5.078a1.842 1.842 0 0 1-.923.247z"/></svg>
+              Node.js
+            </div>
+            {/* Python */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.35.12-.33.2-.32.28-.3.35-.27.43-.25.52-.21.6-.18.67-.14.74-.09.81-.06.87-.02.93.01.97.05.72.09m-6.48 9.77l-.93.01-.83.05-.74.09-.66.13-.56.17-.47.21-.38.25-.3.28-.22.3-.16.32-.1.33-.05.33-.01.33v3.78l.05.55.13.46.21.37.27.29.34.22.39.17.43.13.46.09.49.06.5.03h4.23l.53-.02.49-.05.44-.1.38-.15.33-.21.28-.27.22-.34.17-.41.12-.49.07-.56.03-.63V15l-.08-.63-.19-.52-.3-.42-.42-.32-.54-.24-.66-.16-.79-.1-.92-.04h-2.96l.04-.36.12-.29.21-.23.3-.18.39-.13.48-.08.57-.04.64-.01h4.03m-.3 8.38l.37-.02.33-.05.28-.09.22-.13.17-.17.12-.2.08-.22.04-.23.01-.24-.01-.23-.04-.22-.08-.2-.12-.17-.17-.14-.22-.11-.28-.07-.33-.04-.37-.01h-2.47l-.37.01-.33.04-.28.07-.22.11-.17.14-.12.17-.08.2-.04.22-.01.23.01.24.04.23.08.22.12.2.17.17.22.13.28.09.33.05.37.02h2.47z"/></svg>
+              Python
+            </div>
+            {/* OpenAI */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.998 5.998 0 0 0-3.998 2.9 6.042 6.042 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg>
+              OpenAI
+            </div>
+            {/* Google Gemini */}
+            <div className="integration-badge">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z"/></svg>
+              Gemini
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ CTA ============ */}
+      <section className="cta-section">
+        <div className="landing-container reveal">
+          <h2 className="cta-title">
+            Stop firefighting.<br />
+            <span className="gradient-text">Start shipping.</span>
+          </h2>
+          <p className="cta-desc">
+            Join thousands of developers who sleep soundly knowing their pipelines heal themselves.
+          </p>
+          <div className="cta-actions">
+            <a href="/console/pipeline" className="btn-primary btn-primary-lg">
+              Go to console
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="#" className="btn-secondary">Talk to Sales</a>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FOOTER ============ */}
+      <footer className="landing-footer">
+        <div className="footer-inner">
+          <div className="footer-brand">
+            <div className="footer-brand-logo">
+              <img src="/logo.jpg" alt="VibeCheck AI" />
+              <span className="footer-brand-name">VibeCheck AI</span>
+            </div>
+            <p className="footer-brand-desc">
+              Autonomous self-healing CI/CD pipeline platform powered by AI. Detect, diagnose, patch, and ship — automatically.
+            </p>
+          </div>
+          <div>
+            <div className="footer-col-title">Product</div>
+            <ul className="footer-links">
+              <li><a href="#features">Features</a></li>
+              <li><a href="#how-it-works">How it works</a></li>
+              <li><a href="#integrations">Integrations</a></li>
+              <li><a href="/console/pipeline">Console</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="footer-col-title">Developers</div>
+            <ul className="footer-links">
+              <li><a href="#">Documentation</a></li>
+              <li><a href="#">API Reference</a></li>
+              <li><a href="#">Changelog</a></li>
+              <li><a href="#">Status</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="footer-col-title">Company</div>
+            <ul className="footer-links">
+              <li><a href="#">About</a></li>
+              <li><a href="#">Blog</a></li>
+              <li><a href="#">Careers</a></li>
+              <li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span className="footer-bottom-text">© 2026 VibeCheck AI. All rights reserved.</span>
+          <div className="footer-socials">
+            <a href="#" className="footer-social-btn" aria-label="Twitter/X">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="#" className="footer-social-btn" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/></svg>
+            </a>
+            <a href="#" className="footer-social-btn" aria-label="LinkedIn">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

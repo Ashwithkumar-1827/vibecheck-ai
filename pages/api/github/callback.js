@@ -9,15 +9,15 @@ export default async function handler(req, res) {
   const { code } = req.query;
 
   if (!code) {
-    return res.redirect('/?github_error=missing_code');
+    return res.redirect('/console/repositories?github_error=missing_code');
   }
 
   try {
     const token = await exchangeCodeForToken(code);
     storeToken(token);
-    return res.redirect('/?github=connected');
+    return res.redirect('/console/repositories?github=connected');
   } catch (err) {
     console.error('[OAuth Callback Error] Exchange failed:', err.message);
-    return res.redirect(`/?github_error=${encodeURIComponent(err.message)}`);
+    return res.redirect(`/console/repositories?github_error=${encodeURIComponent(err.message)}`);
   }
 }
