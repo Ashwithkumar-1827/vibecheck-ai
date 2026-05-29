@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import BrandLoader from '../components/BrandLoader';
+import { Dna, Shield, Zap, Rocket } from 'lucide-react';
 
 /* ============================================================
    VibeCheck AI — Landing Page
@@ -166,8 +167,8 @@ export default function LandingPage() {
                 <div className="line"><span className="info">⬤</span> Cloning repository into sandbox container...</div>
                 <div className="line"><span className="info">⬤</span> Running install → build → test pipeline stages...</div>
                 <div className="line"><span className="error">✖ STAGE FAILED:</span> test — 3 assertions failed in services/auth.js</div>
-                <div className="line"><span className="ai">🧠 AI DIAGNOSIS:</span> Root cause identified → stale JWT secret rotation</div>
-                <div className="line"><span className="ai">🧠 PATCH GENERATED:</span> services/auth.js — 12 lines replaced</div>
+                <div className="line"><span className="ai">AI DIAGNOSIS:</span> Root cause identified → stale JWT secret rotation</div>
+                <div className="line"><span className="ai">PATCH GENERATED:</span> services/auth.js — 12 lines replaced</div>
                 <div className="line"><span className="success">✓ PATCH APPLIED</span> → re-running test suite inside sandbox...</div>
                 <div className="line"><span className="success">✓ ALL STAGES PASSED</span> — <span className="orange">PR #247 opened</span> on github.com/org/enterprise-api</div>
               </div>
@@ -246,22 +247,30 @@ export default function LandingPage() {
         <div className="landing-container">
           <div className="spotlight-grid">
             <div className="spotlight-card violet reveal">
-              <div className="spotlight-card-icon">🧬</div>
+              <div className="spotlight-card-icon">
+                <Dna className="w-12 h-12 stroke-[1.5] text-white" />
+              </div>
               <h3 className="spotlight-card-title">Multi-Model<br />Fallback Engine</h3>
               <p className="spotlight-card-desc">Cascading AI models with automatic timeout failover. If one model is slow, the next picks up — guaranteed sub-30s diagnosis.</p>
             </div>
             <div className="spotlight-card magenta reveal">
-              <div className="spotlight-card-icon">🔒</div>
+              <div className="spotlight-card-icon">
+                <Shield className="w-12 h-12 stroke-[1.5] text-white" />
+              </div>
               <h3 className="spotlight-card-title">Zero-Trust<br />Security</h3>
               <p className="spotlight-card-desc">Path traversal interceptors, static command execution, and no-write server sandboxes. Your code is untouchable by design.</p>
             </div>
             <div className="spotlight-card orange reveal">
-              <div className="spotlight-card-icon">⚡</div>
+              <div className="spotlight-card-icon">
+                <Zap className="w-12 h-12 stroke-[1.5] text-white" />
+              </div>
               <h3 className="spotlight-card-title">Real-Time<br />Log Streaming</h3>
               <p className="spotlight-card-desc">Server-Sent Events push every pipeline log line to your browser as it happens. Watch your builds heal live.</p>
             </div>
             <div className="spotlight-card coral reveal">
-              <div className="spotlight-card-icon">🚀</div>
+              <div className="spotlight-card-icon">
+                <Rocket className="w-12 h-12 stroke-[1.5] text-white" />
+              </div>
               <h3 className="spotlight-card-title">Controlled<br />Promotion</h3>
               <p className="spotlight-card-desc">Twin sandbox verification, unified diff comparison, and one-click PR creation. Ship confidently with full audit trails.</p>
             </div>

@@ -82,7 +82,7 @@ export default function RepoManager({ onNavigateToSandbox }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 h-full bg-white text-zinc-900 dark:bg-black dark:text-zinc-50 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 h-full bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50 scrollbar-thin">
       
       {/* 1. GitHub Connection Status Bar */}
       <GitHubConnect onConnectionChange={setIsGithubConnected} />
@@ -147,7 +147,7 @@ export default function RepoManager({ onNavigateToSandbox }) {
             <button
               type="submit"
               disabled={isCloning || !repoUrl.trim()}
-              className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 disabled:opacity-50 dark:bg-white dark:hover:bg-zinc-150 text-white dark:text-zinc-950 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+              className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 disabled:opacity-50 dark:bg-white dark:hover:bg-zinc-150 text-white dark:text-zinc-950 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
             >
               {isCloning ? (
                 <>

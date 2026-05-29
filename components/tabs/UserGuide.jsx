@@ -20,7 +20,7 @@ function GuideSection({ number, icon: Icon, title, children }) {
 
 export default function UserGuide() {
   return (
-    <div className="flex-1 overflow-y-auto bg-white dark:bg-black text-zinc-900 dark:text-zinc-50">
+    <div className="flex-1 overflow-y-auto bg-white dark:bg-[#090909] text-zinc-900 dark:text-zinc-50">
       <div className="max-w-5xl mx-auto px-8 py-10 space-y-9">
         <header className="border-b border-zinc-200 dark:border-zinc-900 pb-8">
           <div className="flex items-center gap-3">

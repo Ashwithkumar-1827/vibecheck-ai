@@ -858,7 +858,7 @@ export default function Dashboard() {
               <button
                 type="submit"
                 disabled={isSavingKeys || (!credentials.openaiKey && !credentials.geminiKey)}
-                className={`py-2.5 px-6 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center space-x-2 transition-colors duration-150 active:scale-[0.98] ${
+                className={`py-2.5 px-6 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center space-x-2 transition-colors duration-150 active:scale-[0.98] ${
                   isSavingKeys || (!credentials.openaiKey && !credentials.geminiKey) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -959,7 +959,7 @@ export default function Dashboard() {
             <button
               type="submit"
               disabled={isDiagnosingCustom}
-              className={`w-full py-2.5 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-150 active:scale-[0.98] ${
+              className={`w-full py-2.5 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-150 active:scale-[0.98] ${
                 isDiagnosingCustom ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -1408,10 +1408,10 @@ tests/test_payment.py .                                                  [100%]
     };
 
     return (
-      <div className="flex-1 flex overflow-hidden w-full h-full bg-white text-zinc-900 dark:bg-black dark:text-zinc-50 transition-colors duration-250">
+      <div className="flex-1 flex overflow-hidden w-full h-full bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50 transition-colors duration-250">
         
         {/* Column 1: Stable Fixed-width Builds History Sidebar */}
-        <div className="w-64 border-r border-zinc-200/80 dark:border-zinc-900 shrink-0 h-full flex flex-col">
+        <div className="w-72 shrink-0 h-full flex flex-col p-4 bg-transparent">
           <Sidebar
             builds={builds}
             selectedBuild={selectedBuild}
@@ -1422,7 +1422,7 @@ tests/test_payment.py .                                                  [100%]
         </div>
 
         {/* Master Workspace Detail Panel */}
-        <div className="flex-1 flex overflow-hidden h-full bg-white dark:bg-black">
+        <div className="flex-1 flex overflow-hidden h-full bg-white dark:bg-[#090909]">
           
           {selectedBuild === 'custom_triage' ? (
             renderCustomTriageConsole()

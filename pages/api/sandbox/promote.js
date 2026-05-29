@@ -74,22 +74,22 @@ export default async function handler(req, res) {
     // 5. Generate beautiful unified diff for the PR description
     const diff = getSandboxDiff(sandboxId);
     const prTitle = `[VibeCheck AI] Autonomic Pipeline Triage Hotfix`;
-    const prBody = `## 🔮 VibeCheck AI Autonomic Hotfix
+    const prBody = `## VibeCheck AI Autonomic Hotfix
 
 An execution pipeline failure was captured and autonomically resolved in an isolated VibeCheck Docker container.
 
-### 📝 AI Failure Diagnosis
+### AI Failure Diagnosis
 > ${diagnosis || 'A division-by-zero or compilation error was detected in the active pipeline runner.'}
 
-### 💡 Root Cause & Fix Explanation
+### Root Cause & Fix Explanation
 ${explanation || 'Resiliently patched active scaling vector to prevent division by zero by intercepting 0 parameters and returning graceful bounds.'}
 
-### 🛡️ Isolated Sandbox Verification
-- **Installation Stage:** Passed ✅
-- **Build Stage:** Passed ✅
-- **Test Suite Verification:** Passed (All 2 tests passed) ✅
+### Isolated Sandbox Verification
+- **Installation Stage:** Passed [✓]
+- **Build Stage:** Passed [✓]
+- **Test Suite Verification:** Passed (All 2 tests passed) [✓]
 
-### 📊 Code Modification Diff
+### Code Modification Diff
 \`\`\`diff
 ${diff}
 \`\`\`

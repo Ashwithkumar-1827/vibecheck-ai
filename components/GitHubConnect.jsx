@@ -126,7 +126,7 @@ export default function GitHubConnect({ onConnectionChange }) {
               )}
               <button
                 onClick={handleDisconnect}
-                className="w-full md:w-auto px-4 py-2 bg-zinc-100 hover:bg-zinc-200/60 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full md:w-auto px-4 py-2 bg-zinc-100 hover:bg-zinc-200/60 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-full text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 Disconnect
@@ -135,7 +135,7 @@ export default function GitHubConnect({ onConnectionChange }) {
           ) : (
             <button
               onClick={handleConnect}
-              className="w-full md:w-auto px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-zinc-900 dark:border-white transition-all shadow-sm active:scale-98"
+              className="w-full md:w-auto px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-zinc-900 dark:border-white transition-all shadow-sm active:scale-98"
             >
               <GitBranch className="h-4 w-4" />
               Connect GitHub Profile

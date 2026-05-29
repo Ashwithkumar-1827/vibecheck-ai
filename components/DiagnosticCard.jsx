@@ -83,7 +83,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
         <button
           onClick={handleDiagnose}
           disabled={isDiagnosing}
-          className="w-full py-2.5 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isDiagnosing ? (
             <>
@@ -167,10 +167,9 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
           {/* Stage 1: Waiting for Human Approval — with Chat button */}
           {patch.status === 'PENDING' && buildStatus === 'PENDING_APPROVAL' && (
             <div className="space-y-3">
-              {/* Chat with AI button */}
               <button
                 onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`w-full py-2 px-4 rounded-lg border font-mono text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-150 active:scale-[0.98] ${
+                className={`w-full py-2 px-4 rounded-full border font-mono text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-all duration-150 active:scale-[0.98] ${
                   isChatOpen
                     ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
                     : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
@@ -185,7 +184,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <button
                     onClick={handleCopy}
-                    className="w-full sm:flex-1 py-2 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full sm:flex-1 py-2 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
                   >
                     <ShieldCheck className="h-4 w-4 shrink-0" />
                     <span>{copied ? 'Copied Patch!' : 'Copy Code Patch'}</span>
@@ -193,7 +192,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                   
                   <button
                     onClick={handleDownload}
-                    className="w-full sm:flex-1 py-2 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full sm:flex-1 py-2 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
                   >
                     <Zap className="h-4 w-4 shrink-0" />
                     <span>Download Healed File</span>
@@ -201,7 +200,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                   
                   <button
                     onClick={() => onReject(patch.id)}
-                    className="w-full sm:w-auto py-2 px-5 rounded-lg bg-transparent hover:bg-zinc-150 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono text-xs uppercase tracking-wider transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full sm:w-auto py-2 px-5 rounded-full bg-transparent hover:bg-zinc-150 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono text-xs uppercase tracking-wider transition-colors duration-150 active:scale-[0.98]"
                   >
                     <span>Reject</span>
                   </button>
@@ -210,7 +209,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <button
                     onClick={() => onApprove(patch.id)}
-                    className="w-full sm:flex-1 py-2 px-4 rounded-lg bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full sm:flex-1 py-2 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
                   >
                     <ShieldCheck className="h-4 w-4 shrink-0" />
                     <span>Approve & Execute Patch</span>
@@ -218,7 +217,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                   
                   <button
                     onClick={() => onReject(patch.id)}
-                    className="w-full sm:w-auto py-2 px-5 rounded-lg bg-transparent hover:bg-zinc-150 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono text-xs uppercase tracking-wider transition-colors duration-150 active:scale-[0.98]"
+                    className="w-full sm:w-auto py-2 px-5 rounded-full bg-transparent hover:bg-zinc-150 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono text-xs uppercase tracking-wider transition-colors duration-150 active:scale-[0.98]"
                   >
                     <span>Reject Fix</span>
                   </button>

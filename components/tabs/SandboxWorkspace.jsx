@@ -423,7 +423,7 @@ export default function SandboxWorkspace({ sandboxConfig, onNavigateToRepos }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50">
       <header className="shrink-0 border-b border-zinc-200 dark:border-zinc-900 px-6 py-5">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
@@ -435,35 +435,35 @@ export default function SandboxWorkspace({ sandboxConfig, onNavigateToRepos }) {
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">One guided flow for graph-aware diagnostics, sandbox repair, repo verification, and promotion.</p>
           </div>
           <div className="flex flex-wrap gap-2 justify-end">
-            <button onClick={handleRunSandbox} disabled={isPreparing || isRunning} className="px-4 py-2 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+            <button onClick={handleRunSandbox} disabled={isPreparing || isRunning} className="px-4 py-2 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
               {isPreparing || isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               Run Sandbox
             </button>
             {gateState.sandboxFailed && !diagnosis && (
-              <button onClick={handleDiagnose} disabled={isDiagnosing} className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+              <button onClick={handleDiagnose} disabled={isDiagnosing} className="px-4 py-2 rounded-full bg-red-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
                 {isDiagnosing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Diagnose
               </button>
             )}
             {diagnosis && !gateState.sandboxPassed && (
-              <button onClick={handleApplyFix} disabled={isApplying} className="px-4 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+              <button onClick={handleApplyFix} disabled={isApplying} className="px-4 py-2 rounded-full bg-emerald-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
                 {isApplying ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                 Apply and Rerun
               </button>
             )}
             {gateState.sandboxPassed && !gateState.mainPassed && (
-              <button onClick={handleRunMainPipeline} disabled={isMainRunning} className="px-4 py-2 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+              <button onClick={handleRunMainPipeline} disabled={isMainRunning} className="px-4 py-2 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
                 {isMainRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
                 Verify Repo
               </button>
             )}
             {gateState.mainPassed && (
               <>
-                <button onClick={handlePromote} disabled={isPromoting} className="px-4 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+                <button onClick={handlePromote} disabled={isPromoting} className="px-4 py-2 rounded-full bg-emerald-600 text-white disabled:opacity-50 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
                   {isPromoting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <GitPullRequest className="h-4 w-4" />}
                   Create PR
                 </button>
-                <a href={`/api/sandbox/download?sandboxId=${encodeURIComponent(sandboxId)}`} className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
+                <a href={`/api/sandbox/download?sandboxId=${encodeURIComponent(sandboxId)}`} className="px-4 py-2 rounded-full border border-zinc-200 dark:border-zinc-800 text-[10px] font-mono font-bold uppercase flex items-center gap-2">
                   <Download className="h-4 w-4" />
                   Download
                 </a>

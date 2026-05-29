@@ -178,7 +178,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-white text-zinc-900 dark:bg-black dark:text-zinc-50">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50">
       
       {/* LEFT COLUMN: Controls & Info (Width: 320px) */}
       <div className="w-full md:w-80 shrink-0 border-r border-zinc-200/80 dark:border-zinc-900/60 p-6 flex flex-col justify-between overflow-y-auto scrollbar-thin">
@@ -220,7 +220,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
             <button
               onClick={handleRunPipeline}
               disabled={isRunning || !activeRepo || activeRepo.status === 'cloning'}
-              className="w-full py-3 bg-zinc-950 hover:bg-zinc-900 disabled:opacity-50 dark:bg-white dark:hover:bg-zinc-150 text-white dark:text-zinc-950 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+              className="w-full py-3 bg-zinc-950 hover:bg-zinc-900 disabled:opacity-50 dark:bg-white dark:hover:bg-zinc-150 text-white dark:text-zinc-950 text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
             >
               {isRunning ? (
                 <>
@@ -261,7 +261,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
                 <button
                   onClick={handleDiagnose}
                   disabled={isDiagnosing}
-                  className="w-full py-3 bg-red-650 hover:bg-red-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-900 dark:hover:bg-zinc-850 dark:border dark:border-zinc-800"
+                  className="w-full py-3 bg-red-650 hover:bg-red-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-900 dark:hover:bg-zinc-850 dark:border dark:border-zinc-800"
                 >
                   {isDiagnosing ? (
                     <>
@@ -279,7 +279,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
                 <button
                   onClick={handleApplyFix}
                   disabled={isApplying}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
                 >
                   {isApplying ? (
                     <>
@@ -313,7 +313,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
               <button
                 onClick={handleCreateSandbox}
                 disabled={isCreatingSandbox}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
               >
                 {isCreatingSandbox ? (
                   <>

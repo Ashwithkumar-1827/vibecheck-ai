@@ -48,14 +48,14 @@ export default function Sidebar({ builds, selectedBuild, onSelectBuild, onTrigge
   };
 
   return (
-    <aside className="w-full bg-white dark:bg-zinc-950 flex flex-col shrink-0 h-full transition-colors duration-200 cursor-default select-none">
+    <aside className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl flex flex-col shrink-0 h-full transition-colors duration-200 cursor-default select-none overflow-hidden shadow-sm">
       
       {/* Trigger Build Button */}
       <div className="p-4 border-b border-zinc-150 dark:border-zinc-900 transition-colors duration-200 bg-white dark:bg-zinc-950">
         <button
           onClick={onTriggerBuild}
           disabled={isTriggering}
-          className={`w-full py-2.5 px-4 rounded-lg flex items-center justify-center space-x-2 font-mono font-bold text-xs uppercase tracking-wider transition-all duration-150 shrink-0 ${
+          className={`w-full py-2.5 px-4 rounded-full flex items-center justify-center space-x-2 font-mono font-bold text-xs uppercase tracking-wider transition-all duration-150 shrink-0 ${
             isTriggering
               ? 'bg-zinc-150 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-800 cursor-not-allowed'
               : 'bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 active:scale-[0.98] shadow-sm'
@@ -79,7 +79,7 @@ export default function Sidebar({ builds, selectedBuild, onSelectBuild, onTrigge
       <div className="px-4 pb-3 transition-colors duration-200 bg-white dark:bg-zinc-950">
         <button
           onClick={() => onSelectBuild('custom_triage')}
-          className={`w-full py-2 px-4 rounded-lg flex items-center justify-center space-x-2 font-mono font-bold text-xs uppercase tracking-wider transition-all duration-150 border ${
+          className={`w-full py-2 px-4 rounded-full flex items-center justify-center space-x-2 font-mono font-bold text-xs uppercase tracking-wider transition-all duration-150 border ${
             selectedBuild === 'custom_triage'
               ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-850 dark:text-white shadow-sm'
               : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-800 dark:hover:text-zinc-250'

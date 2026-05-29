@@ -20,7 +20,7 @@ export default function Layout({
   ];
 
   return (
-    <div className="flex h-screen w-screen transition-colors duration-250 bg-white text-zinc-900 dark:bg-black dark:text-zinc-50 font-sans select-none overflow-hidden">
+    <div className="flex h-screen w-screen transition-colors duration-250 bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50 font-sans select-none overflow-hidden">
       
       {/* 1. Dynamic Hover-Expand Left Menu Sidebar (Width: 64px Collapsed, 224px Expanded) */}
       <nav className="w-16 hover:w-56 group/main-sidebar bg-zinc-100 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-900 flex flex-col py-4 justify-between shrink-0 select-none h-full transition-all duration-300 ease-in-out z-50 overflow-hidden">
@@ -30,9 +30,11 @@ export default function Layout({
           
           {/* Top Logo Section */}
           <div className="flex items-center space-x-3 w-full px-2">
-            <div className="p-2 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl shadow-sm hover:rotate-12 transition-transform duration-300 shrink-0">
-              <Sparkles className="h-4.5 w-4.5 fill-current text-white dark:text-zinc-950" />
-            </div>
+            <img 
+              src="/logo.jpg" 
+              alt="VibeCheck AI Logo" 
+              className="h-8.5 w-8.5 rounded-lg object-cover shadow-sm hover:rotate-12 transition-transform duration-300 shrink-0 border border-zinc-200 dark:border-zinc-800"
+            />
             <span className="hidden group-hover/main-sidebar:inline font-mono font-bold text-xs text-zinc-900 dark:text-white tracking-wider uppercase whitespace-nowrap transition-all duration-200">
               VibeCheck AI
             </span>
@@ -111,7 +113,7 @@ export default function Layout({
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         
         {/* OpenAI Top Border Header */}
-        <header className="px-6 py-3.5 flex items-center justify-between bg-white border-b border-zinc-200/80 dark:bg-black dark:border-zinc-900/60 shrink-0 transition-colors duration-200">
+        <header className="px-6 py-3.5 flex items-center justify-between bg-white border-b border-zinc-200/80 dark:bg-[#090909] dark:border-zinc-900/60 shrink-0 transition-colors duration-200">
           <div>
             <h1 className="text-sm font-bold font-sans tracking-tight text-zinc-950 dark:text-white flex items-center gap-1.5 uppercase">
               VibeCheck CI/CD <span className="text-[9px] px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 rounded font-mono border border-zinc-200 dark:border-zinc-800 transition-colors duration-200">PLAYGROUND</span>
