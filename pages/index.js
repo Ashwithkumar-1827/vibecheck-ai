@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import BrandLoader from '../components/BrandLoader';
 
 /* ============================================================
    VibeCheck AI — Landing Page
@@ -9,6 +10,14 @@ import Head from 'next/head';
 export default function LandingPage() {
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isStartupLoading, setIsStartupLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsStartupLoading(false);
+    }, 3182.7 + 400); // 3182.7ms duration + 400ms fadeout transition
+    return () => clearTimeout(timer);
+  }, []);
 
   // Sticky nav scroll listener
   useEffect(() => {
@@ -43,6 +52,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
+      {isStartupLoading && <BrandLoader />}
       <Head>
         <title>VibeCheck AI — Autonomous Self-Healing CI/CD Platform</title>
         <meta

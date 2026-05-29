@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
-import DevOpsLoader from '../../components/DevOpsLoader';
 import Sidebar from '../../components/Sidebar';
 import ConsoleLog from '../../components/ConsoleLog';
 import DiagnosticCard from '../../components/DiagnosticCard';
@@ -18,14 +17,6 @@ import {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 3182.7);
-    return () => clearTimeout(timer);
-  }, []);
 
   const routeToTabMap = {
     pipeline: 'pipelines',
@@ -1577,10 +1568,6 @@ tests/test_payment.py .                                                  [100%]
       </div>
     );
   };
-
-  if (isInitialLoading) {
-    return <DevOpsLoader />;
-  }
 
   return (
     <Layout
