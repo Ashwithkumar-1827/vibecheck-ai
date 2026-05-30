@@ -20,7 +20,7 @@ export default function FlowPage() {
     try {
       const serializer = new XMLSerializer();
       let svgString = serializer.serializeToString(svgEl);
-      svgString = svgString.replace('<svg id="lifecycle-svg-flowchart"', '<svg id="lifecycle-svg-flowchart" width="800" height="2120"');
+      svgString = svgString.replace('<svg id="lifecycle-svg-flowchart"', '<svg id="lifecycle-svg-flowchart" width="800" height="2300"');
       
       const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
       const URL = window.URL || window.webkitURL || window;
@@ -31,7 +31,7 @@ export default function FlowPage() {
         try {
           const canvas = document.createElement('canvas');
           canvas.width = 800;
-          canvas.height = 2120;
+          canvas.height = 2300;
           const ctx = canvas.getContext('2d');
           
           ctx.fillStyle = '#090909';
@@ -152,10 +152,10 @@ export default function FlowPage() {
             <svg 
               id="lifecycle-svg-flowchart" 
               xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 800 2120"
+              viewBox="0 0 800 2300"
               className="w-full h-auto bg-[#090909] rounded-2xl border border-zinc-900/80 shadow-[0_0_50px_rgba(0,0,0,0.8)]"
             >
-              <rect width="800" height="2120" rx="16" fill="#090909" />
+              <rect width="800" height="2300" rx="16" fill="#090909" />
               <defs>
                 <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                   <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#52525b" />
@@ -295,7 +295,7 @@ export default function FlowPage() {
 
               <g>
                 <polygon points="400,840 460,900 400,960 340,900" fill="#450a0a" stroke="#f43f5e" strokeWidth="1.5" />
-                <text x="400" y="903" fill="#fda4af" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Tests Fail?</text>
+                <text x="400" y="903" fill="#fda4af" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Pipeline Fails?</text>
               </g>
 
               <g>
@@ -327,7 +327,7 @@ export default function FlowPage() {
 
               <g>
                 <rect x="280" y="1360" width="240" height="150" rx="12" fill="#0f0f13" stroke="#27272a" strokeWidth="1.5" />
-                <text x="294" y="1382" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">CONTAINER TEST PIPELINE</text>
+                <text x="294" y="1382" fill="#ffffff" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">CONTAINER STAGE PIPELINE</text>
                 <rect x="442" y="1372" width="28" height="13" rx="3" fill="#ff7a3d" fillOpacity="0.1" stroke="#ff7a3d" strokeOpacity="0.3" strokeWidth="0.5" />
                 <text x="446" y="1381" fill="#ff7a3d" fontSize="7" fontFamily="monospace" fontWeight="bold">NEW</text>
                 <rect x="476" y="1372" width="30" height="13" rx="3" fill="#10b981" fillOpacity="0.1" stroke="#10b981" strokeOpacity="0.3" strokeWidth="0.5" />
@@ -345,17 +345,17 @@ export default function FlowPage() {
                 <g>
                   <rect x="442" y="1398" width="64" height="16" rx="2" fill="#18181f" stroke="#27272a" strokeWidth="0.75" />
                   <circle cx="450" cy="1406" r="2.5" fill="#10b981" />
-                  <text x="458" y="1409" fill="#a1a1aa" fontSize="6" fontFamily="monospace">Test</text>
+                  <text x="458" y="1409" fill="#a1a1aa" fontSize="6" fontFamily="monospace">Pipeline</text>
                 </g>
                 <text x="294" y="1438" fill="#a1a1aa" fontSize="8.5" fontFamily="sans-serif">
-                  <tspan x="294" dy="0">Executes sterile container test suite (Install,</tspan>
-                  <tspan x="294" dy="12">Build, and Test stages) for verification.</tspan>
+                  <tspan x="294" dy="0">Executes sterile container pipeline (Install,</tspan>
+                  <tspan x="294" dy="12">Build, and Pipeline stages) for verification.</tspan>
                 </text>
               </g>
 
               <g>
                 <polygon points="400,1570 460,1630 400,1690 340,1630" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
-                <text x="400" y="1633" fill="#6ee7b7" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Tests Pass?</text>
+                <text x="400" y="1633" fill="#6ee7b7" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Pipeline Passes?</text>
               </g>
 
               <g>
@@ -396,6 +396,46 @@ export default function FlowPage() {
                   <tspan x="660" dy="0">Emergency cleanup: Wipes all container</tspan>
                   <tspan x="660" dy="11">workspaces automatically!</tspan>
                 </text>
+              </g>
+
+              {/* Glossary Legend Box */}
+              <g>
+                <rect x="100" y="2100" width="600" height="170" rx="12" fill="#0f0f13" stroke="#27272a" strokeWidth="1.5" />
+                <text x="400" y="2130" fill="#ffffff" fontSize="11" fontFamily="monospace" fontWeight="bold" letterSpacing="1" textAnchor="middle">FLOWCHART ACRONYM GLOSSARY</text>
+                <text x="400" y="2152" fill="#a1a1aa" fontSize="9" fontFamily="sans-serif" textAnchor="middle">To maintain the visual symmetry of the flowchart, key words are written in short form.</text>
+                <text x="400" y="2165" fill="#a1a1aa" fontSize="9" fontFamily="sans-serif" textAnchor="middle">The full form of each abbreviated word is detailed below:</text>
+                <line x1="140" y1="2185" x2="660" y2="2185" stroke="#27272a" strokeWidth="1" />
+                
+                {/* ATTN Pill */}
+                <g>
+                  <rect x="128" y="2205" width="44" height="16" rx="3" fill="#f59e0b" fillOpacity="0.1" stroke="#f59e0b" strokeOpacity="0.4" strokeWidth="0.75" />
+                  <text x="150" y="2216" fill="#f59e0b" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">ATTN</text>
+                  <text x="150" y="2236" fill="#e4e4e7" fontSize="8.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Attention</text>
+                </g>
+                {/* AUTH Pill */}
+                <g>
+                  <rect x="238" y="2205" width="44" height="16" rx="3" fill="#8b5cf6" fillOpacity="0.1" stroke="#8b5cf6" strokeOpacity="0.4" strokeWidth="0.75" />
+                  <text x="260" y="2216" fill="#a78bfa" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">AUTH</text>
+                  <text x="260" y="2236" fill="#e4e4e7" fontSize="8.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Authorization</text>
+                </g>
+                {/* DEPS Pill */}
+                <g>
+                  <rect x="348" y="2205" width="44" height="16" rx="3" fill="#3b82f6" fillOpacity="0.1" stroke="#3b82f6" strokeOpacity="0.4" strokeWidth="0.75" />
+                  <text x="370" y="2216" fill="#60a5fa" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">DEPS</text>
+                  <text x="370" y="2236" fill="#e4e4e7" fontSize="8.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Dependencies</text>
+                </g>
+                {/* REVW Pill */}
+                <g>
+                  <rect x="458" y="2205" width="44" height="16" rx="3" fill="#6366f1" fillOpacity="0.1" stroke="#6366f1" strokeOpacity="0.4" strokeWidth="0.75" />
+                  <text x="480" y="2216" fill="#818cf8" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">REVW</text>
+                  <text x="480" y="2236" fill="#e4e4e7" fontSize="8.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Review</text>
+                </g>
+                {/* ASAP Pill */}
+                <g>
+                  <rect x="568" y="2205" width="44" height="16" rx="3" fill="#f43f5e" fillOpacity="0.1" stroke="#f43f5e" strokeOpacity="0.4" strokeWidth="0.75" />
+                  <text x="590" y="2216" fill="#fb7185" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">ASAP</text>
+                  <text x="590" y="2236" fill="#e4e4e7" fontSize="8.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">As Soon As Possible</text>
+                </g>
               </g>
             </svg>
           </div>

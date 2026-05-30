@@ -226,7 +226,7 @@ export default function HowItWorks() {
           </h1>
 
           <p className="hero-subtitle" style={{ maxWidth: '640px' }}>
-            A simple, step-by-step guide to configure your keys, import repositories, run sandbox builds, and heal broken pipelines.
+            A simple, step-by-step guide to configure your keys, import repositories, run sandbox builds, and repair broken pipelines.
           </p>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '28px' }}>

@@ -106,11 +106,11 @@ export default function LandingPage() {
       
       const simulationSteps = [
         { delay: 800, type: 'info', text: '⬤ Cloning repository into sandbox container...' },
-        { delay: 2000, type: 'info', text: '⬤ Running install → build → test pipeline stages...' },
-        { delay: 3500, type: 'error', text: '✖ STAGE FAILED: test: 3 assertions failed in services/auth.js' },
+        { delay: 2000, type: 'info', text: '⬤ Running install → build → pipeline stages...' },
+        { delay: 3500, type: 'error', text: '✖ STAGE FAILED: pipeline: 3 assertions failed in services/auth.js' },
         { delay: 5000, type: 'ai', text: 'AI DIAGNOSIS: Root cause identified → stale JWT secret rotation' },
         { delay: 6500, type: 'ai', text: 'PATCH GENERATED: services/auth.js: 12 lines replaced' },
-        { delay: 8000, type: 'success', text: '✓ PATCH APPLIED → re-running test suite inside sandbox...' },
+        { delay: 8000, type: 'success', text: '✓ PATCH APPLIED → re-running pipeline stages inside sandbox...' },
         { delay: 9500, type: 'success', text: '✓ ALL STAGES PASSED  -  PR #247 opened on github.com/org/enterprise-api' }
       ];
 
@@ -266,7 +266,7 @@ export default function LandingPage() {
             </div>
             <div className="hero-stat">
               <div className="hero-stat-value">93%</div>
-              <div className="hero-stat-label">Auto-Heal Success</div>
+              <div className="hero-stat-label">Auto-Repair Success</div>
             </div>
             <div className="hero-stat">
               <div className="hero-stat-value">&lt;30s</div>
@@ -386,7 +386,7 @@ export default function LandingPage() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-5"/></svg>
               </div>
               <h3 className="feature-card-title">Smart Pipeline Monitor</h3>
-              <p className="feature-card-desc">Real-time surveillance of your CI/CD pipelines. Detects failures across Install, Build, and Test stages the instant they occur.</p>
+              <p className="feature-card-desc">Real-time surveillance of your CI/CD pipelines. Detects failures across Install, Build, and Pipeline stages the instant they occur.</p>
             </div>
 
             <div className="feature-card reveal">
@@ -455,7 +455,7 @@ export default function LandingPage() {
                 <Zap className="w-12 h-12 stroke-[1.5] text-white" />
               </div>
               <h3 className="spotlight-card-title">Real-Time<br />Log Streaming</h3>
-              <p className="spotlight-card-desc">Server-Sent Events push every pipeline log line to your browser as it happens. Watch your builds heal live.</p>
+              <p className="spotlight-card-desc">Server-Sent Events push every pipeline log line to your browser as it happens. Watch your builds repair live.</p>
             </div>
             <div className="spotlight-card coral reveal">
               <div className="spotlight-card-icon">
@@ -570,12 +570,12 @@ export default function LandingPage() {
                 <text x="460" y="184" fill="#34d399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">✓ PASS</text>
               </g>
 
-              {/* Node 4: Test Stage (FAIL) */}
+              {/* Node 4: Pipeline Stage (FAIL) */}
               <g>
                 <rect x="540" y="150" width="200" height="70" rx="12" fill="#0f0f13" stroke="#f43f5e" strokeWidth="1.5" />
                 <circle cx="565" cy="185" r="5" fill="#f43f5e" />
-                <text x="582" y="178" fill="#ffffff" fontSize="11" fontFamily="sans-serif" fontWeight="bold">Test</text>
-                <text x="582" y="195" fill="#71717a" fontSize="9.5" fontFamily="monospace">npm test</text>
+                <text x="582" y="178" fill="#ffffff" fontSize="11" fontFamily="sans-serif" fontWeight="bold">Pipeline</text>
+                <text x="582" y="195" fill="#71717a" fontSize="9.5" fontFamily="monospace">npm run pipeline</text>
                 <rect x="675" y="172" width="50" height="18" rx="4" fill="#450a0a" stroke="#f43f5e" strokeWidth="1" />
                 <text x="700" y="184" fill="#fb7185" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">✖ FAIL</text>
               </g>
@@ -600,7 +600,7 @@ export default function LandingPage() {
                 <text x="242" y="445" fill="#ffffff" fontSize="11" fontFamily="sans-serif" fontWeight="bold">Patch &amp; Verify</text>
                 <text x="242" y="465" fill="#a1a1aa" fontSize="10.5" fontFamily="sans-serif">12 lines replaced → all tests re-passed in sandbox</text>
                 <rect x="545" y="441" width="70" height="18" rx="4" fill="#064e3b" stroke="#10b981" strokeWidth="1" />
-                <text x="580" y="453" fill="#34d399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">✓ HEALED</text>
+                <text x="580" y="453" fill="#34d399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">✓ REPAIRED</text>
               </g>
 
               {/* Node 7: Ship to GitHub */}
@@ -673,14 +673,13 @@ export default function LandingPage() {
             <span className="gradient-text">Start shipping.</span>
           </h2>
           <p className="cta-desc">
-            Join thousands of developers who sleep soundly knowing their pipelines heal themselves.
+            Join thousands of developers who sleep soundly knowing their pipelines repair themselves.
           </p>
           <div className="cta-actions">
             <a href="/console/repositories" className="btn-primary btn-primary-lg">
               Go to console
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
-            <a href="#" className="btn-secondary">Talk to Sales</a>
           </div>
         </div>
       </section>

@@ -227,10 +227,7 @@
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.8px;
-  background: linear-gradient(135deg, var(--color-gradient-magenta), var(--color-gradient-violet), var(--color-gradient-orange));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .nav-links {
