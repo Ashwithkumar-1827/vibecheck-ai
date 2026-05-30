@@ -4,6 +4,104 @@ import { buildKnowledgeGraph, readKnowledgeContext } from '../../../lib/knowledg
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Resiliently corrects a patch's originalCode by matching it line-by-line
+ * against the actual file contents in the container, preventing failures
+ * due to slight AI formatting/closing tag hallucinations.
+ */
+function correctPatchOriginalCode(containerId, patch) {
+  if (!patch.filePath || !patch.originalCode) return;
+
+  try {
+    const fileContent = readFileFromContainer(containerId, patch.filePath);
+    if (!fileContent) return;
+
+    const hasCrLf = fileContent.includes('\r\n');
+    const normalize = (txt) => {
+      if (hasCrLf) {
+        return txt.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+      } else {
+        return txt.replace(/\r\n/g, '\n');
+      }
+    };
+
+    const normOriginal = normalize(patch.originalCode);
+
+    // 1. Direct exact match check
+    if (fileContent.includes(normOriginal)) {
+      return;
+    }
+
+    // 2. Fuzzy similarity matcher fallback
+    const normalizeLineFuzzy = (line) => {
+      return line
+        .replace(/^>\s*/, '')          // strip traceback indicators
+        .replace(/#.*$/, '')           // strip comments
+        .replace(/\/\/.*$/, '')        // strip comments
+        .replace(/\s+/g, '')           // strip whitespace
+        .toLowerCase();                // lowercase
+    };
+
+    const searchLines = patch.originalCode.split(/\r?\n/).map(normalizeLineFuzzy).filter(l => l);
+    if (searchLines.length === 0) return;
+
+    const fileLines = fileContent.split(/\r?\n/);
+    const fileLinesNorm = fileLines.map(normalizeLineFuzzy);
+    const windowSize = searchLines.length;
+
+    let bestScore = 0;
+    let bestStart = -1;
+    let bestEnd = -1;
+
+    // Slide window
+    for (let i = 0; i <= fileLinesNorm.length - windowSize; i++) {
+      let matches = 0;
+      for (let j = 0; j < windowSize; j++) {
+        if (fileLinesNorm[i + j] === searchLines[j]) {
+          matches++;
+        }
+      }
+      const score = matches / windowSize;
+      if (score > bestScore) {
+        bestScore = score;
+        bestStart = i;
+        bestEnd = i + windowSize - 1;
+      }
+    }
+
+    // Slide window with size flexibility (±2 lines)
+    for (let delta = -2; delta <= 2; delta++) {
+      const adjustedSize = windowSize + delta;
+      if (adjustedSize <= 0 || adjustedSize > fileLinesNorm.length) continue;
+      for (let i = 0; i <= fileLinesNorm.length - adjustedSize; i++) {
+        let matches = 0;
+        const checkSize = Math.min(adjustedSize, searchLines.length);
+        for (let j = 0; j < checkSize; j++) {
+          if (fileLinesNorm[i + j] === searchLines[j]) {
+            matches++;
+          }
+        }
+        const score = matches / searchLines.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestStart = i;
+          bestEnd = i + adjustedSize - 1;
+        }
+      }
+    }
+
+    // Confidence threshold 40% (same as patcher.js fallback)
+    if (bestScore >= 0.4 && bestStart !== -1) {
+      const matchedLines = fileLines.slice(bestStart, bestEnd + 1);
+      const matchedOriginal = matchedLines.join(hasCrLf ? '\r\n' : '\n');
+      console.log(`[AI Diagnosis] Auto-corrected originalCode for ${patch.filePath} to match lines ${bestStart + 1} to ${bestEnd + 1} exactly (confidence: ${(bestScore * 100).toFixed(0)}%)`);
+      patch.originalCode = matchedOriginal;
+    }
+  } catch (err) {
+    console.warn(`[AI Diagnosis] Failed to auto-correct originalCode for ${patch.filePath}:`, err.message);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -204,6 +302,30 @@ export default async function handler(req, res) {
           }
         }
       }
+    }
+
+    // Final auto-correction pass for all patches to ensure 100% literal matches
+    if (Array.isArray(diagnosis.patches) && diagnosis.patches.length > 0) {
+      for (const patch of diagnosis.patches) {
+        correctPatchOriginalCode(containerId, patch);
+      }
+      // Update root-level backward compatible fields
+      if (diagnosis.patches[0]) {
+        diagnosis.filePath = diagnosis.patches[0].filePath;
+        diagnosis.explanation = diagnosis.patches[0].explanation;
+        diagnosis.originalCode = diagnosis.patches[0].originalCode;
+        diagnosis.patchedCode = diagnosis.patches[0].patchedCode;
+      }
+    } else if (diagnosis.filePath && !diagnosis.error) {
+      // Correct single patch legacy format
+      const tempPatch = {
+        filePath: diagnosis.filePath,
+        originalCode: diagnosis.originalCode,
+        patchedCode: diagnosis.patchedCode,
+        explanation: diagnosis.explanation
+      };
+      correctPatchOriginalCode(containerId, tempPatch);
+      diagnosis.originalCode = tempPatch.originalCode;
     }
 
     return res.status(200).json(diagnosis);
