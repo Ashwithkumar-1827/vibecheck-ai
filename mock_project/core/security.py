@@ -22,13 +22,14 @@ def validate_token(token: str) -> bool:
             
     role = metadata.get("user", "guest")
     scale_str = metadata.get("scale", "1")
-    
     try:
         scale = int(scale_str)
     except ValueError:
         scale = 1
-        
-    # BUG: Division by zero when scale is 0.
+
+    if scale == 0:
+        scale = 1
+
     factor = 100 / scale
     
     return role == "admin" and factor > 5

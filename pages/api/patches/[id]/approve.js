@@ -271,8 +271,14 @@ export default async function handler(req, res) {
         console.log(`Successfully applied AI code patch to: ${patch.file_path}`);
       } else {
         // If everything failed, check if it's already been patched
-        const cleanPatched = patch.patched_code.replace(/^>\s*/, '');
-        if (fileContent.includes(cleanPatched)) {
+        const cleanPatchedLines = patch.patched_code
+          .split('\n')
+          .map(l => l.replace(/^>\s*/, '').trim())
+          .filter(l => l && !l.startsWith('#') && !l.startsWith('//'));
+        
+        const isPatched = cleanPatchedLines.length > 0 && cleanPatchedLines.every(line => fileContent.includes(line));
+        
+        if (isPatched) {
           console.log(`Patch already applied to: ${patch.file_path}`);
         } else {
           console.warn(`Target original code block not found in ${patch.file_path}.`);
@@ -298,8 +304,8 @@ export default async function handler(req, res) {
       // Update patch status in our DB
       db.updatePatchStatus(id, "APPROVED");
       
-      // Set build status to HEALING so the frontend showing pipeline state triggers a transition animation
-      db.updateBuildStatus(patch.build_id, "HEALING");
+      // Set build status to REPAIRING so the frontend showing pipeline state triggers a transition animation
+      db.updateBuildStatus(patch.build_id, "REPAIRING");
       
       // Trigger pipeline re-run to verify the fix!
       console.log(`Re-executing pipeline tests to verify autonomic hotfix code...`);

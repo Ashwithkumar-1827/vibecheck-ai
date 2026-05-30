@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import GitHubConnect from '../GitHubConnect';
 import RepoCard from '../RepoCard';
-import { GitBranch, GitFork, RefreshCw, Plus, HelpCircle, ShieldCheck } from 'lucide-react';
+import { GitBranch, GitFork, RefreshCw, Plus, HelpCircle, ShieldCheck, GitPullRequest, AlertTriangle } from 'lucide-react';
 
 export default function RepoManager({ onNavigateToSandbox }) {
   const [repos, setRepos] = useState([]);
@@ -49,7 +49,12 @@ export default function RepoManager({ onNavigateToSandbox }) {
         setRepoUrl('');
         setBranch('main');
         await fetchRepos();
-        if (onNavigateToSandbox) {
+
+        // Only navigate to sandbox if the cloned repo has a pipeline
+        const repoHasNoPipeline = data.hasNoPipeline || (data.detection && data.detection.hasCICD === false);
+        if (repoHasNoPipeline) {
+          setError(`No CI/CD pipeline detected in "${data.owner}/${data.name}". The repository has been cloned but the sandbox cannot be opened without a valid pipeline configuration (e.g. package.json, requirements.txt, Jenkinsfile, GitHub Actions, etc).`);
+        } else if (onNavigateToSandbox) {
           onNavigateToSandbox(data, data.sandboxId || null, null);
         }
       } else {
@@ -82,13 +87,13 @@ export default function RepoManager({ onNavigateToSandbox }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 h-full bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 h-full bg-transparent text-zinc-900 dark:bg-transparent dark:text-zinc-50 scrollbar-thin">
       
       {/* 1. GitHub Connection Status Bar */}
       <GitHubConnect onConnectionChange={setIsGithubConnected} />
 
       {/* 2. Repository Cloning Center */}
-      <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-6 shadow-sm">
+      <div className="bg-zinc-50 dark:bg-[#1c1c1c] border border-zinc-200/60 dark:border-[#262626] rounded-2xl p-6 shadow-sm">
         <div className="flex items-center space-x-3 mb-4">
           <div className="p-2 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-lg">
             <Plus className="h-4.5 w-4.5" />
@@ -116,7 +121,7 @@ export default function RepoManager({ onNavigateToSandbox }) {
                 onChange={(e) => setRepoUrl(e.target.value)}
                 placeholder="https://github.com/owner/repository"
                 disabled={isCloning}
-                className="w-full px-4 py-2.5 bg-white border border-zinc-200 hover:border-zinc-350 dark:bg-black dark:border-zinc-900 dark:hover:border-zinc-800 dark:focus:border-zinc-850 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all disabled:opacity-50 text-zinc-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-white border border-zinc-200 hover:border-zinc-350 dark:bg-[#090909] dark:border-[#262626] dark:hover:border-zinc-800 dark:focus:border-zinc-850 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all disabled:opacity-50 text-zinc-900 dark:text-white"
                 required
               />
             </div>
@@ -132,13 +137,13 @@ export default function RepoManager({ onNavigateToSandbox }) {
                 onChange={(e) => setBranch(e.target.value)}
                 placeholder="main"
                 disabled={isCloning}
-                className="w-full px-4 py-2.5 bg-white border border-zinc-200 hover:border-zinc-350 dark:bg-black dark:border-zinc-900 dark:hover:border-zinc-800 dark:focus:border-zinc-850 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all disabled:opacity-50 text-zinc-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-white border border-zinc-200 hover:border-zinc-350 dark:bg-[#090909] dark:border-[#262626] dark:hover:border-zinc-800 dark:focus:border-zinc-850 rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white transition-all disabled:opacity-50 text-zinc-900 dark:text-white"
                 required
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-250/20 dark:border-zinc-900/60">
+          <div className="flex items-center justify-between pt-2 border-t border-zinc-250/20 dark:border-[#262626]/60">
             <div className="flex items-center space-x-2 text-[9px] text-zinc-400 dark:text-zinc-550 font-mono">
               <HelpCircle className="h-3.5 w-3.5" />
               <span>Supports both public and authenticated private repositories</span>
@@ -179,7 +184,7 @@ export default function RepoManager({ onNavigateToSandbox }) {
           </h3>
           <button 
             onClick={fetchRepos}
-            className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
+            className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-full hover:bg-zinc-100 dark:hover:bg-[#1c1c1c] transition-all"
             title="Refresh list"
           >
             <RefreshCw className="h-4 w-4" />
@@ -187,28 +192,40 @@ export default function RepoManager({ onNavigateToSandbox }) {
         </div>
 
         {loadingList ? (
-          <div className="flex flex-col items-center justify-center py-16 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl bg-zinc-50 dark:bg-zinc-950">
+          <div className="flex flex-col items-center justify-center py-16 border border-zinc-200/60 dark:border-[#262626] rounded-2xl bg-zinc-50 dark:bg-[#1c1c1c]">
             <RefreshCw className="h-6 w-6 text-indigo-500 animate-spin mb-3" />
             <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-zinc-400 animate-pulse">Loading Sandboxed Contexts...</span>
           </div>
         ) : repos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl bg-zinc-50 dark:bg-zinc-950 text-zinc-400 dark:text-zinc-650">
+          <div className="flex flex-col items-center justify-center py-20 border border-zinc-200/60 dark:border-[#262626] rounded-2xl bg-zinc-50 dark:bg-[#1c1c1c] text-zinc-400 dark:text-zinc-650">
             <GitBranch className="h-10 w-10 text-zinc-300 dark:text-zinc-800 mb-3" />
             <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-zinc-500">No active repositories</span>
             <span className="text-[9px] font-mono mt-1">Paste a repo URL above to clone your first container workspace.</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {repos.map((repo) => (
-              <RepoCard
-                key={repo.id}
-                repo={repo}
-                actionLabel="Open Sandbox"
-                actionIcon={<ShieldCheck className="h-3 w-3" />}
-                onRun={() => onNavigateToSandbox && onNavigateToSandbox(repo, repo.sandboxId || null, null)}
-                onDelete={() => handleDelete(repo.id)}
-              />
-            ))}
+            {repos.map((repo) => {
+              const isPromoted = repo.status === 'promoted' && repo.prUrl;
+              const hasNoPipeline = repo.hasNoPipeline || (repo.detection && repo.detection.hasCICD === false);
+              return (
+                <RepoCard
+                  key={repo.id}
+                  repo={repo}
+                  hasNoPipeline={hasNoPipeline}
+                  actionLabel={hasNoPipeline ? "no pipeline detected" : (isPromoted ? "PR Status" : "Open Sandbox")}
+                  actionIcon={hasNoPipeline ? <AlertTriangle className="h-3 w-3 text-red-500" /> : (isPromoted ? <GitPullRequest className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />)}
+                  onRun={() => {
+                    if (hasNoPipeline) return;
+                    if (isPromoted) {
+                      window.open(repo.prUrl, '_blank', 'noopener,noreferrer');
+                    } else if (onNavigateToSandbox) {
+                      onNavigateToSandbox(repo, repo.sandboxId || null, null);
+                    }
+                  }}
+                  onDelete={() => handleDelete(repo.id)}
+                />
+              );
+            })}
           </div>
         )}
       </div>

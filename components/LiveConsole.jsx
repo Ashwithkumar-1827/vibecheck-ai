@@ -79,10 +79,10 @@ export default function LiveConsole({ logs, isRunning }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 border border-zinc-900 rounded-xl overflow-hidden shadow-2xl relative font-mono text-xs text-zinc-300">
+    <div className="flex flex-col h-full bg-[#090909] border border-[#262626] rounded-xl overflow-hidden shadow-2xl relative font-mono text-xs text-zinc-300">
       
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/60 border-b border-zinc-900/80 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#141414] border-b border-[#262626] shrink-0">
         <div className="flex items-center space-x-2">
           <Terminal className="h-4 w-4 text-zinc-400" />
           <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-zinc-400">

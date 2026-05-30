@@ -62,12 +62,12 @@ export default function ConsoleLog({ logOutput }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white border border-zinc-200/80 dark:bg-zinc-950 dark:border-zinc-900 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex-1 flex flex-col bg-white border border-zinc-200/80 dark:bg-[#090909] dark:border-[#262626] rounded-xl overflow-hidden shadow-sm">
       {/* Console Title Bar */}
-      <div className="bg-zinc-50 border-b border-zinc-200/80 dark:bg-zinc-900/40 dark:border-zinc-900 px-4 py-3 flex items-center justify-between">
+      <div className="bg-zinc-50 border-b border-zinc-200/80 dark:bg-[#141414] dark:border-[#262626] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
           <Terminal className="h-4 w-4 text-zinc-500" />
-          <div className="h-3 w-[1px] bg-zinc-300 dark:bg-zinc-800" />
+          <div className="h-3 w-[1px] bg-zinc-300 dark:bg-[#262626]" />
           <span className="text-zinc-600 dark:text-zinc-400 font-mono text-[10px] uppercase tracking-wider font-semibold">
             Pipeline logs console
           </span>

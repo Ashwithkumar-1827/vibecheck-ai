@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Cpu, AlertTriangle, ShieldCheck, Flame, Shield, Loader2, MessageSquare, Zap } from 'lucide-react';
 import ChatPanel from './ChatPanel';
 
-export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus, buildId, onDiagnose }) {
+export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus, buildId, onDiagnose, onUpdatePatch }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -195,7 +195,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
                     className="w-full sm:flex-1 py-2 px-4 rounded-full bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors duration-150 active:scale-[0.98]"
                   >
                     <Zap className="h-4 w-4 shrink-0" />
-                    <span>Download Healed File</span>
+                    <span>Download Fixed File</span>
                   </button>
                   
                   <button
@@ -226,12 +226,12 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
             </div>
           )}
 
-          {/* Stage 2: Active Healing Pipelines (Loading Checklist) */}
-          {buildStatus === 'HEALING' && (
+          {/* Stage 2: Active Auto-Repair Pipelines (Loading Checklist) */}
+          {buildStatus === 'REPAIRING' && (
             <div className="bg-zinc-50/50 dark:bg-zinc-900/10 p-4 rounded-lg border border-zinc-200/80 dark:border-zinc-900 space-y-3 font-mono text-xs">
               <div className="flex items-center space-x-2 text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-wider pb-1">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Healing Pipeline Active</span>
+                <span>Auto-Repair Pipeline Active</span>
               </div>
               
               <div className="space-y-2">
@@ -261,7 +261,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
               <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-1">
-                  Build healed Successfully
+                  Build Repaired Successfully
                 </h4>
                 <p className="text-[11px] text-zinc-600 dark:text-zinc-450 mt-1 leading-relaxed">
                   The synthesized patch was applied to <code className="bg-zinc-200/50 dark:bg-zinc-900 px-1 py-0.5 rounded font-mono text-zinc-900 dark:text-zinc-100">{patch.file_path}</code>. Subsequent verification pipelines executed all test suites successfully!
@@ -292,6 +292,7 @@ export default function DiagnosticCard({ patch, onApprove, onReject, buildStatus
           buildId={buildId}
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
+          onUpdatePatch={onUpdatePatch}
         />
       )}
     </div>

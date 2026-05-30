@@ -7,6 +7,11 @@ import { runContainerPipeline } from '../../../lib/executor';
 
 const CONTAINER_STORE = path.join(process.cwd(), 'scratch', 'containers');
 
+const IGNORE_COPY = new Set([
+  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
+  '__pycache__', '.venv', 'venv', 'graphify-out', 'logs'
+]);
+
 function resolveWorkspace(containerId) {
   const base = path.resolve(CONTAINER_STORE);
   const target = path.resolve(base, containerId, 'workspace');
@@ -37,25 +42,54 @@ function listChangedFiles(workspacePath) {
       .map((line) => line.slice(2).trim().replace(/^"|"$/g, ''))
       .filter(Boolean);
   } catch (_) {
-    const fallback = ['index.js', 'src/index.js', 'app.js', 'main.py'];
-    return fallback.filter((file) => fs.existsSync(path.join(workspacePath, file)));
+    return [];
   }
+}
+
+function listAllWorkspaceFiles(workspacePath, rel, result) {
+  if (rel === undefined) rel = '';
+  if (result === undefined) result = [];
+
+  const full = path.join(workspacePath, rel);
+  if (!fs.existsSync(full)) return result;
+
+  for (const entry of fs.readdirSync(full, { withFileTypes: true })) {
+    if (IGNORE_COPY.has(entry.name)) continue;
+    if (entry.name === '.metadata.json') continue;
+
+    const relChild = rel ? (rel + '/' + entry.name) : entry.name;
+    const fullChild = path.join(workspacePath, relChild);
+
+    if (entry.isDirectory()) {
+      listAllWorkspaceFiles(workspacePath, relChild, result);
+    } else if (entry.isFile()) {
+      try {
+        const stat = fs.statSync(fullChild);
+        if (stat.size <= 1024 * 1024) {
+          result.push(relChild);
+        }
+      } catch (_) {}
+    }
+  }
+
+  return result;
 }
 
 function safeReadChangedFile(workspacePath, relativePath) {
   const resolved = path.resolve(workspacePath, relativePath);
   if (!resolved.startsWith(workspacePath + path.sep)) {
-    throw new Error(`Refusing to read path outside sandbox: ${relativePath}`);
+    throw new Error('Refusing to read path outside sandbox: ' + relativePath);
   }
 
-  const stat = fs.statSync(resolved);
-  if (!stat.isFile()) {
+  let stat;
+  try {
+    stat = fs.statSync(resolved);
+  } catch (_) {
     return null;
   }
 
-  if (stat.size > 1024 * 1024) {
-    throw new Error(`Changed file is too large to promote through this gate: ${relativePath}`);
-  }
+  if (!stat.isFile()) return null;
+  if (stat.size > 1024 * 1024) return null;
 
   return fs.readFileSync(resolved, 'utf-8');
 }
@@ -63,7 +97,7 @@ function safeReadChangedFile(workspacePath, relativePath) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).end('Method ' + req.method + ' Not Allowed');
   }
 
   try {
@@ -79,18 +113,35 @@ export default async function handler(req, res) {
     }
 
     const sandboxWorkspace = resolveWorkspace(sandboxId);
-    const changedFiles = listChangedFiles(sandboxWorkspace);
+
+    // Try git-tracked changed files first; fall back to full workspace sync
+    let changedFiles = listChangedFiles(sandboxWorkspace);
+    let syncMode = 'git-diff';
 
     if (changedFiles.length === 0) {
-      return res.status(400).json({ error: 'No reviewed sandbox changes detected for main pipeline run.' });
+      changedFiles = listAllWorkspaceFiles(sandboxWorkspace);
+      syncMode = 'full-sync';
+      console.log('[Main Run] No git changes in sandbox: full workspace sync (' + changedFiles.length + ' files).');
     }
 
+    if (changedFiles.length === 0) {
+      return res.status(400).json({ error: 'Sandbox workspace is empty: nothing to verify.' });
+    }
+
+    let copiedCount = 0;
     for (const filePath of changedFiles) {
-      const content = safeReadChangedFile(sandboxWorkspace, filePath);
-      if (content !== null) {
-        writeFileToContainer(repo.containerId, filePath, content);
+      try {
+        const content = safeReadChangedFile(sandboxWorkspace, filePath);
+        if (content !== null) {
+          writeFileToContainer(repo.containerId, filePath, content);
+          copiedCount++;
+        }
+      } catch (copyErr) {
+        console.warn('[Main Run] Skipping ' + filePath + ': ' + copyErr.message);
       }
     }
+
+    console.log('[Main Run] Synced ' + copiedCount + '/' + changedFiles.length + ' files (mode: ' + syncMode + ').');
 
     const result = await runContainerPipeline(repo.containerId, ['install', 'build', 'test']);
 
@@ -99,16 +150,18 @@ export default async function handler(req, res) {
       status: result.status,
       time: result.endTime,
       promotedFromSandbox: sandboxId,
-      changedFiles
+      changedFiles,
+      syncMode
     };
     upsertRepo(repo);
 
     return res.status(200).json({
       ...result,
-      changedFiles
+      changedFiles,
+      syncMode
     });
   } catch (err) {
     console.error('[Sandbox Main Pipeline API Error]:', err);
-    return res.status(500).json({ error: `Main repo pipeline failed: ${err.message}` });
+    return res.status(500).json({ error: 'Main repo pipeline failed: ' + err.message });
   }
 }

@@ -49,9 +49,10 @@
 }
 
 /* ---------- Reset & Base ---------- */
-.landing-page * {
-  margin: 0;
-  padding: 0;
+.landing-page,
+.landing-page *,
+.landing-page *::before,
+.landing-page *::after {
   box-sizing: border-box;
 }
 

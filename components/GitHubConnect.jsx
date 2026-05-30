@@ -67,7 +67,7 @@ export default function GitHubConnect({ onConnectionChange }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-6 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl h-24">
+      <div className="flex items-center justify-center p-6 bg-zinc-50 dark:bg-[#1c1c1c] border border-zinc-200/60 dark:border-[#262626] rounded-2xl h-24">
         <RefreshCw className="h-5 w-5 text-indigo-500 animate-spin mr-3" />
         <span className="text-xs font-mono font-bold text-zinc-500 uppercase tracking-wider">Verifying GitHub Handshake...</span>
       </div>
@@ -75,7 +75,7 @@ export default function GitHubConnect({ onConnectionChange }) {
   }
 
   return (
-    <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
+    <div className="bg-zinc-50 dark:bg-[#1c1c1c] border border-zinc-200/60 dark:border-[#262626] rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
       <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
         
         {/* Connection Profile Details */}
@@ -83,7 +83,7 @@ export default function GitHubConnect({ onConnectionChange }) {
           <div className={`p-3.5 rounded-2xl shrink-0 transition-all duration-300 ${
             status.connected 
               ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-              : 'bg-zinc-250/50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800'
+              : 'bg-zinc-250/50 text-zinc-600 dark:bg-[#090909] dark:text-zinc-400 border border-zinc-200 dark:border-[#262626]'
           }`}>
             <GitBranch className="h-6 w-6" />
           </div>
@@ -99,7 +99,7 @@ export default function GitHubConnect({ onConnectionChange }) {
                   Active OAuth
                 </span>
               ) : (
-                <span className="text-[9px] font-mono font-bold uppercase text-zinc-400 dark:text-zinc-650 bg-zinc-200/50 dark:bg-zinc-900 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800">
+                <span className="text-[9px] font-mono font-bold uppercase text-zinc-400 dark:text-zinc-650 bg-zinc-200/50 dark:bg-[#090909] px-2 py-0.5 rounded border border-zinc-200 dark:border-[#262626]">
                   Not Connected
                 </span>
               )}
@@ -126,7 +126,7 @@ export default function GitHubConnect({ onConnectionChange }) {
               )}
               <button
                 onClick={handleDisconnect}
-                className="w-full md:w-auto px-4 py-2 bg-zinc-100 hover:bg-zinc-200/60 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-full text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full md:w-auto px-4 py-2 bg-zinc-100 hover:bg-zinc-200/60 dark:bg-[#090909] dark:hover:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-full text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 Disconnect

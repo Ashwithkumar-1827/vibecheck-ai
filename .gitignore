@@ -34,5 +34,8 @@ db.json.tmp
 .DS_Store
 Thumbs.db
 
-# Scratch containers
-scratch/containers/
+# Scratch files (dev scripts, containers, downloads)
+scratch/
+
+# Runtime database (repos)
+repos.json

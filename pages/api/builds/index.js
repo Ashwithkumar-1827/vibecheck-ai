@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         scenario = "All Passed (Success)";
       }
       
-      // Write the build record as FAILED — diagnosis is triggered by the user manually
+      // Write the build record as FAILED: diagnosis is triggered by the user manually
       // via the "Run AI Diagnosis" button in the UI, NOT automatically here.
       const status = success ? "SUCCESS" : "FAILED";
       const newBuild = db.createBuild(status, log, scenario);
@@ -63,7 +63,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Failed to trigger pipeline build" });
     }
   }
+
+  if (req.method === 'DELETE') {
+    try {
+      db.clearBuilds();
+      return res.status(200).json({ success: true, message: "Builds cleared successfully" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Failed to clear builds" });
+    }
+  }
   
-  res.setHeader('Allow', ['GET', 'POST']);
+  res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 };

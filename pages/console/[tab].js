@@ -8,7 +8,6 @@ import DiffViewer from '../../components/DiffViewer';
 import RepoManager from '../../components/tabs/RepoManager';
 import PipelineConsole from '../../components/tabs/PipelineConsole';
 import SandboxWorkspace from '../../components/tabs/SandboxWorkspace';
-import UserGuide from '../../components/tabs/UserGuide';
 import { 
   GitBranch, ChevronRight, Activity, ShieldCheck, AlertCircle, Sliders, 
   Sparkles, Terminal, Database, Key, Cpu, HardDrive, KeyRound, Save, 
@@ -25,7 +24,6 @@ export default function Dashboard() {
     sandbox: 'sandbox',
     storage: 'database',
     credentials: 'keys',
-    guide: 'guide',
     execution: 'execution'
   };
 
@@ -36,7 +34,6 @@ export default function Dashboard() {
     sandbox: 'sandbox',
     database: 'storage',
     keys: 'credentials',
-    guide: 'guide',
     execution: 'execution'
   };
 
@@ -107,9 +104,10 @@ export default function Dashboard() {
   };
   const [systemConfig, setSystemConfig] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to premium dark mode
-  const [activeTab, setActiveTab] = useState('pipelines'); // 'pipelines', 'agent', 'database', 'keys', 'repos', 'execution', 'sandbox'
+  const [activeTab, setActiveTab] = useState('pipelines'); // 'pipelines', 'agent', 'database', 'keys', 'repos', 'execution', 'sandbox', 'flow'
   const [selectedRepoForConsole, setSelectedRepoForConsole] = useState(null);
   const [sandboxConfig, setSandboxConfig] = useState(null);
+  const [repos, setRepos] = useState([]);
   
   // Database tab states
   const [rawDbContent, setRawDbContent] = useState('');
@@ -131,12 +129,44 @@ export default function Dashboard() {
   // ADO Logs Selected Step Navigator
   const [selectedLogStep, setSelectedLogStep] = useState('env');
 
-  // Fetch initial builds and system configuration on mount
+  const fetchRepos = async () => {
+    try {
+      const res = await fetch('/api/repos');
+      const data = await res.json();
+      if (res.ok) {
+        setRepos(data);
+      }
+    } catch (err) {
+      console.error("Failed to load repositories inside Dashboard:", err);
+    }
+  };
+
+  // Fetch initial system configuration and credentials on mount
   useEffect(() => {
     fetchSystemConfig();
-    fetchBuilds(true);
     fetchCredentialsStatus();
+    fetchRepos();
   }, []);
+
+  // Clear builds when entering the test pipelines page to keep it clean and transient.
+  // When entering other pages (like dashboard), load builds for KPI analytics.
+  useEffect(() => {
+    if (activeTab === 'pipelines') {
+      console.log("[Pipelines] Entering test pipelines page. Clearing historical builds as requested...");
+      const clearHistory = async () => {
+        try {
+          await fetch('/api/builds', { method: 'DELETE' });
+          setBuilds([]);
+          setSelectedBuild(null);
+        } catch (e) {
+          console.error("Failed to clear builds:", e);
+        }
+      };
+      clearHistory();
+    } else {
+      fetchBuilds(false);
+    }
+  }, [activeTab]);
 
   // 2-HOUR BACKGROUND CRON: Automatically append a new enterprise failure scenario
   useEffect(() => {
@@ -164,6 +194,7 @@ export default function Dashboard() {
   // Sync db raw view when builds update
   useEffect(() => {
     fetchRawDbData();
+    fetchRepos();
   }, [builds, activeTab]);
 
   // DOUBLE-LAYER THEME INJECTION: Force 'dark' class on BOTH document element and document body
@@ -249,7 +280,7 @@ export default function Dashboard() {
   const handleApprovePatch = async (patchId) => {
     if (!selectedBuild) return;
     console.log(`[User Event] Approved patch #${patchId}. Applying autonomic hotfix fixes...`);
-    setSelectedBuild(prev => ({ ...prev, status: 'HEALING' }));
+    setSelectedBuild(prev => ({ ...prev, status: 'REPAIRING' }));
     
     try {
       const res = await fetch(`/api/patches/${patchId}/approve`, { method: 'POST' });
@@ -261,8 +292,8 @@ export default function Dashboard() {
           setSelectedBuild(result.build);
         }, 1500);
       } else {
-        const errMsg = result.error || "The healing pipeline executed but the verification tests failed. Inspect the console logs.";
-        alert(`Autonomic Healing Failure:\n\n${errMsg}`);
+        const errMsg = result.error || "The remediation pipeline executed but the verification tests failed. Inspect the console logs.";
+        alert(`Autonomic Remediation Failure:\n\n${errMsg}`);
         await fetchBuilds();
         fetchBuildDetails(selectedBuild.id);
       }
@@ -407,21 +438,22 @@ export default function Dashboard() {
       case 'SUCCESS': return 'text-emerald-600 dark:text-emerald-450';
       case 'FAILED': return 'text-red-600 dark:text-red-450';
       case 'PENDING_APPROVAL': return 'text-amber-600 dark:text-amber-405';
-      case 'HEALING': return 'text-zinc-500 dark:text-zinc-400';
+      case 'REPAIRING': return 'text-zinc-500 dark:text-zinc-400';
       default: return 'text-zinc-400';
     }
   };
 
   // 1. Diagnostics Cockpit Workspace View (tab: 'agent')
   const renderAgentWorkspace = () => {
-    const totalRuns = builds.length;
-    const passedRuns = builds.filter(b => b.status === 'SUCCESS').length;
-    const failedRuns = builds.filter(b => b.status === 'FAILED' || b.status === 'PENDING_APPROVAL').length;
-    const healingRuns = builds.filter(b => b.status === 'HEALING').length;
-    const successRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : 100;
+    const totalWorkspaces = repos.length;
+    const readyWorkspaces = repos.filter(r => r.status === 'ready').length;
+    const promotedWorkspaces = repos.filter(r => r.status === 'promoted').length;
+    const activeSandboxes = repos.filter(r => r.sandboxId && r.status !== 'promoted').length;
+    const greenWorkspaces = repos.filter(r => r.status === 'ready' || r.status === 'promoted').length;
+    const healthRate = totalWorkspaces > 0 ? Math.round((greenWorkspaces / totalWorkspaces) * 100) : 100;
     
     return (
-      <div className="flex-1 p-8 overflow-y-auto h-full max-w-5xl mx-auto space-y-8 select-text no-scrollbar">
+      <div className="flex-1 p-8 overflow-y-auto h-full w-full bg-transparent dark:bg-transparent space-y-8 select-text no-scrollbar">
         {/* Apple Style Monochromatic Header */}
         <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
           <div className="flex items-center space-x-3">
@@ -430,209 +462,86 @@ export default function Dashboard() {
             </div>
             <div>
               <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">VibeCheck Diagnostics Dashboard</h2>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">Enterprise Triage Performance, Latency Gauges, & autonomic hotfix Workflows</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">Enterprise Triage Performance, Latency Gauges, & autonomic hotfix Workflows</p>
             </div>
           </div>
         </div>
 
         {/* Executive Stats Cards (Apple Design: Flat, high-contrast, padded) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Total Pipeline Runs</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{totalRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">runs</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Verification Pass Rate</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${successRate > 70 ? 'text-emerald-600' : 'text-zinc-900 dark:text-white'}`}>{successRate}%</span>
-              <span className="text-xs font-mono text-zinc-400">healed/green</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Active Failures</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${failedRuns > 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}`}>{failedRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">triage pending</span>
-            </div>
-          </div>
-          <div className="p-5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl shadow-sm">
-            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Active Healers</span>
-            <div className="flex items-baseline space-x-1.5">
-              <span className={`text-3xl font-bold tracking-tight ${healingRuns > 0 ? 'text-zinc-900 dark:text-white animate-pulse' : 'text-zinc-900 dark:text-white'}`}>{healingRuns}</span>
-              <span className="text-xs font-mono text-zinc-400">in execution</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Diagnostics Latency & Multi-LLM Benchmarks (Google Inspired Panels) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl space-y-4">
-            <div className="flex items-center space-x-2 border-b border-zinc-200/80 dark:border-zinc-900 pb-3">
-              <Cpu className="h-4.5 w-4.5 text-zinc-500" />
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">LLM Triage Speed Benchmarks</h3>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Row 1: Gemini */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">Google Gemini 2.5 Flash</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">~0.9s (Active Failover)</span>
+        <div className="space-y-8">
+          {/* Row 1: 3 up containers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="p-8 bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block font-bold">Total Workspaces</span>
+                  <HardDrive className="h-5 w-5 text-zinc-400 dark:text-zinc-650" />
                 </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[85%] rounded-full"></div>
-                </div>
+                <div className="text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white">{totalWorkspaces}</div>
               </div>
-              
-              {/* Row 2: OpenAI */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">OpenAI GPT-4o-mini</span>
-                  <span className="text-zinc-500 dark:text-zinc-450">~1.2s (Quota Limited 429)</span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-zinc-400 dark:bg-zinc-700 h-full w-[65%] rounded-full"></div>
-                </div>
-              </div>
-
-              {/* Row 3: Simulator Fallback */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-zinc-700 dark:text-zinc-300">Offline Triage Simulator</span>
-                  <span className="text-zinc-400 dark:text-zinc-500">~0.01s (Instant Core Engine)</span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-zinc-250 dark:bg-zinc-800 h-full w-[98%] rounded-full"></div>
-                </div>
+              <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 mt-4 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>active systems</span>
               </div>
             </div>
             
-            <div className="bg-zinc-50 dark:bg-zinc-900/40 p-3 rounded-lg border border-zinc-250/80 dark:border-zinc-900 text-[10px] text-zinc-450 dark:text-zinc-500 font-mono flex items-start space-x-2">
-              <Info className="h-3.5 w-3.5 mt-0.5 text-zinc-400 shrink-0" />
-              <span>VibeCheck dynamically evaluates active LLM state constraints. If your configured OpenAI token yields a quota limitation, it initiates zero-delay fallback failover to the Google Gemini Flash API.</span>
+            <div className="p-8 bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block font-bold">Workspace Health</span>
+                  <ShieldCheck className="h-5 w-5 text-zinc-400 dark:text-zinc-650" />
+                </div>
+                <div className="text-5xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">{healthRate}%</div>
+              </div>
+              <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 mt-4 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>ready/promoted</span>
+              </div>
+            </div>
+
+            <div className="p-8 bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block font-bold">Active Trials</span>
+                  <AlertTriangle className="h-5 w-5 text-zinc-400 dark:text-zinc-650" />
+                </div>
+                <div className={`text-5xl font-extrabold tracking-tight ${activeSandboxes > 0 ? "text-red-500 animate-pulse" : "text-zinc-900 dark:text-white"}`}>{activeSandboxes}</div>
+              </div>
+              <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 mt-4 flex items-center gap-1.5">
+                <span className={`h-2 w-2 rounded-full ${activeSandboxes > 0 ? "bg-red-500 animate-ping" : "bg-zinc-400"}`} />
+                <span>{activeSandboxes > 0 ? "debugging active" : "no active debugging"}</span>
+              </div>
             </div>
           </div>
 
-          <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-2xl space-y-5 flex flex-col min-h-[460px]">
-            <div className="flex items-center space-x-2 border-b border-zinc-200/80 dark:border-zinc-900 pb-3 shrink-0">
-              <Activity className="h-4.5 w-4.5 text-zinc-500" />
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">automated hotfix pipeline Tree Flowchart</h3>
+          {/* Row 2: 2 down containers */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-8 bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block font-bold">Operational Slots</span>
+                  <Cpu className="h-5 w-5 text-zinc-400 dark:text-zinc-650" />
+                </div>
+                <div className="text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white">{readyWorkspaces}</div>
+              </div>
+              <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 mt-4 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>slots ready</span>
+              </div>
             </div>
 
-            {/* Tree Flowchart Container (flowcharting frameworks / modeling suites Inspired) */}
-            <div className="flex-1 flex flex-col items-center justify-between select-none">
-              
-              {/* Level 1: Root Node */}
-              <div className="relative z-10 flex flex-col items-center shrink-0">
-                <div className="bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border border-zinc-900 dark:border-zinc-250 px-6 py-2.5 rounded-xl font-mono text-[9px] uppercase font-bold tracking-widest shadow-sm flex items-center space-x-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span>VibeCheck CI-CD Engine</span>
+            <div className="p-8 bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block font-bold">PRs Promoted</span>
+                  <GitBranch className="h-5 w-5 text-zinc-400 dark:text-zinc-650" />
                 </div>
+                <div className="text-5xl font-extrabold tracking-tight text-indigo-500 dark:text-indigo-400">{promotedWorkspaces}</div>
               </div>
-
-              {/* Connector Tree level 1 -> level 2 */}
-              <div className="w-full h-6 relative select-none pointer-events-none shrink-0">
-                <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="50%" y1="0" x2="50%" y2="50%" />
-                  <line x1="25%" y1="50%" x2="75%" y2="50%" />
-                  <line x1="25%" y1="50%" x2="25%" y2="100%" />
-                  <line x1="75%" y1="50%" x2="75%" y2="100%" />
-                </svg>
+              <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 mt-4 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                <span>submitted/active</span>
               </div>
-
-              {/* Level 2 & 3 Combined Vertical Branching Paths */}
-              <div className="w-full flex justify-between gap-4 flex-1">
-                
-                {/* Left Column: Diagnostics Subsystem Branch */}
-                <div className="w-[48%] flex flex-col items-center justify-between h-full">
-                  <div className="w-full text-center border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 py-2 rounded-lg font-mono text-[8.5px] uppercase font-bold tracking-wider text-zinc-650 dark:text-zinc-300 shadow-sm shrink-0">
-                    Diagnostics Pipeline
-                  </div>
-                  
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 1 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-lg flex items-center justify-center text-red-650 dark:text-red-400 shrink-0">
-                      <AlertCircle className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">1. Intercept Fail</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Intercepts stdout test tracebacks and dependencies.</p>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 2 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-zinc-950 text-white dark:bg-zinc-900 dark:text-zinc-150 border border-zinc-900 dark:border-zinc-850 rounded-lg flex items-center justify-center text-zinc-400 shrink-0">
-                      <Sparkles className="h-4.5 w-4.5 fill-current text-white dark:text-zinc-950" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">2. Agentic Triage</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Gemini 1.5 Flash generates high-precision code patches.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Healing Subsystem Branch */}
-                <div className="w-[48%] flex flex-col items-center justify-between h-full">
-                  <div className="w-full text-center border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 py-2 rounded-lg font-mono text-[8.5px] uppercase font-bold tracking-wider text-zinc-650 dark:text-zinc-300 shadow-sm shrink-0">
-                    Autonomic Healing
-                  </div>
-                  
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 3 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                      <ShieldCheck className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">3. Operator Review</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Human review of diffs. Approval triggers automated injection.</p>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-4 relative select-none pointer-events-none shrink-0">
-                    <svg className="absolute inset-0 w-full h-full text-zinc-250 dark:text-zinc-800" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <line x1="50%" y1="0" x2="50%" y2="100%" />
-                    </svg>
-                  </div>
-
-                  {/* Leaf Node 4 */}
-                  <div className="w-full bg-zinc-50 dark:bg-zinc-900/25 border border-zinc-200 dark:border-zinc-850 p-3 rounded-xl flex items-center space-x-3 shadow-sm hover:scale-[1.01] transition-transform duration-150 group flex-1 min-h-[72px]">
-                    <div className="h-8 w-8 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-450 shrink-0">
-                      <RefreshCw className="h-4.5 w-4.5 group-hover:animate-spin" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-[9px] tracking-wide font-mono block">4. Autonomic Heal</span>
-                      <p className="text-[9px] text-zinc-450 dark:text-zinc-500 leading-snug font-sans mt-0.5">Injects code edits and validates the pytest outcomes.</p>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
             </div>
           </div>
         </div>
@@ -640,6 +549,597 @@ export default function Dashboard() {
     );
   };
 
+  // Download vertical flowchart as PNG client-side (100% Robust Standard SVG, no taints)
+  const handleDownloadPng = () => {
+    const svgEl = document.getElementById('lifecycle-svg-flowchart');
+    if (!svgEl) return;
+    
+    try {
+      const serializer = new XMLSerializer();
+      let svgString = serializer.serializeToString(svgEl);
+      
+      // Ensure absolute dimensions inside the XML string for high-resolution canvas export
+      svgString = svgString.replace('<svg id="lifecycle-svg-flowchart"', '<svg id="lifecycle-svg-flowchart" width="800" height="2120"');
+      
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const URL = window.URL || window.webkitURL || window;
+      const blobUrl = URL.createObjectURL(svgBlob);
+      
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 800;
+          canvas.height = 2120;
+          const ctx = canvas.getContext('2d');
+          
+          // Draw the dark background color explicitly for dark board background
+          ctx.fillStyle = '#090909';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          ctx.drawImage(img, 0, 0);
+          
+          const pngUrl = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngUrl;
+          downloadLink.download = 'vibecheck-application-flow.png';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        } catch (err) {
+          console.error('Canvas serialization or drawing failed:', err);
+          alert('Canvas serialization failed: ' + err.message + '\n' + err.stack);
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+        }
+      };
+      img.onerror = (err) => {
+        console.error('Image loading failed inside PNG exporter:', err);
+        URL.revokeObjectURL(blobUrl);
+        alert('PNG export failed: the browser was unable to render the SVG elements into a canvas image.');
+      };
+      img.src = blobUrl;
+    } catch (e) {
+      console.error('Failed to export flowchart as PNG:', e);
+      alert('Failed to export flowchart: ' + e.message);
+    }
+  };
+
+  // 1.5. Application Flow Presentation Workspace View (tab: 'flow')
+  const renderFlowWorkspace = () => {
+    return (
+      <div className="flex-1 p-8 overflow-y-auto h-full w-full bg-transparent dark:bg-transparent space-y-8 select-text no-scrollbar">
+        {/* Apple Style Monochromatic Header */}
+        <div className="border-b border-zinc-200 dark:border-zinc-900 pb-5">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-zinc-950 text-white dark:bg-white dark:text-black rounded-xl">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold font-sans tracking-tight text-zinc-950 dark:text-white uppercase">VibeCheck Application Flow</h2>
+              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">End-to-End Sequential Architecture & Autonomic Lifecycle Stages</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Cloned Repository Autonomic Lifecycle Architecture (High-Contrast Presentation Flowchart - Vertical Flow) */}
+        <div className="flex flex-col bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl overflow-hidden shadow-sm">
+          {/* Header Panel */}
+          <div className="p-5 border-b border-zinc-150 dark:border-[#262626] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-50/50 dark:bg-[#141414]/30">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white uppercase font-sans">
+                  application flow
+                </h3>
+              </div>
+              <p className="text-xs text-zinc-400 dark:text-zinc-550 font-mono mt-0.5">
+                End-to-End sequential presentation schema of repository clone, dependency parsing, troubleshooting sandbox, build execution, and PR promotion
+              </p>
+            </div>
+
+            {/* Buttons Panel */}
+            <div className="flex items-center gap-3">
+              {/* Back to Dashboard routing button */}
+              <button
+                onClick={() => {
+                  setActiveTab('agent');
+                  router.push('/console/diagnostics', undefined, { shallow: true });
+                }}
+                className="py-1.5 px-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-850 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 rounded-full font-mono text-[10px] uppercase font-bold tracking-wider flex items-center space-x-2 active:scale-[0.98] transition-all duration-100 shadow-sm"
+              >
+                <span>Back to Dashboard</span>
+              </button>
+
+              {/* Download Button */}
+              <button
+                onClick={handleDownloadPng}
+                className="py-1.5 px-4 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 border border-emerald-250/30 dark:border-emerald-900/30 rounded-full font-mono text-[10px] uppercase font-bold tracking-wider flex items-center space-x-2 active:scale-[0.98] transition-transform duration-100 shadow-sm"
+              >
+                <svg className="h-3.5 w-3.5 fill-current shrink-0" viewBox="0 0 20 20">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L9 5.414V17a1 1 0 102 0V5.414l5.293 5.293a1 1 0 00-1.414-1.414l-7-7z" transform="rotate(180 10 10)" transformOrigin="center" />
+                </svg>
+                <span>Download Diagram (PNG)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Flowchart Presentation Board Canvas */}
+          <div className="w-full bg-[#090909] select-none p-6 rounded-b-2xl border-t border-zinc-200 dark:border-zinc-800">
+            <div className="w-[800px] h-[2120px] mx-auto relative">
+              <svg 
+                id="lifecycle-svg-flowchart" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 800 2120"
+                className="absolute inset-0 w-full h-full z-0 select-none"
+                style={{ width: '800px', height: '2120px', backgroundColor: '#090909' }}
+              >
+                {/* SVG Solid Dark Background */}
+                <rect width="800" height="2120" fill="#090909" />
+
+                {/* SVG Connections & Markers */}
+                <defs>
+                  <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a1a1aa" />
+                  </marker>
+                  <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+                  </marker>
+                  <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f43f5e" />
+                  </marker>
+                </defs>
+
+                {/* ==================== HIGH-CONTRAST ORTHOGONAL CONNECTION PATHS ==================== */}
+
+                {/* Line 1: Import Card -> Private Diamond */}
+                <path
+                  d="M 400,160 L 400,220"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 2: Private Diamond -> OAuth Handshake (Yes Path) */}
+                <path
+                  d="M 340,280 L 220,280"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-red)"
+                />
+
+                {/* Line 3: OAuth Handshake -> Workspace Init */}
+                <path
+                  d="M 130,320 L 130,420 A 20,20 0 0 0 150,440 L 300,440"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-red)"
+                />
+
+                {/* Line 4: Private Diamond -> Workspace Init (No Path) */}
+                <path
+                  d="M 400,340 L 400,400"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-green)"
+                />
+
+                {/* Line 5a: Workspace Init -> Graphify */}
+                <path
+                  d="M 400,480 L 400,505"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 5b: Graphify -> Sandbox Interactive Cockpit */}
+                <path
+                  d="M 400,575 L 400,640"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 6: Sandbox -> Sandbox Fail Diamond */}
+                <path
+                  d="M 400,780 L 400,840"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 7: Diamond Fail -> AI Triage (Yes Path: Build Fails) */}
+                <path
+                  d="M 400,960 L 400,1020"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-red)"
+                />
+
+                {/* Line 8: Diamond Fail -> Direct Promotion Bypass */}
+                <path
+                  d="M 460,900 L 640,900 A 20,20 0 0 1 660,920 L 660,1730 A 20,20 0 0 1 640,1750 L 460,1750"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  strokeDasharray="4,4"
+                  markerEnd="url(#arrow-green)"
+                />
+
+                {/* Line 9: AI Triage -> Grilling Chat */}
+                <path
+                  d="M 400,1160 L 400,1220"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 10: Grilling Chat -> Docker Verification Pipeline */}
+                <path
+                  d="M 400,1300 L 400,1360"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 11: Pipeline -> Diamond Pass */}
+                <path
+                  d="M 400,1510 L 400,1570"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 12: Diamond Pass -> Grilling Chat */}
+                <path
+                  d="M 340,1630 L 160,1630 A 20,20 0 0 1 140,1610 L 140,1280 A 20,20 0 0 1 160,1260 L 300,1260"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2"
+                  strokeDasharray="4,4"
+                  markerEnd="url(#arrow-red)"
+                />
+
+                {/* Line 13: Diamond Pass -> PR Promotion (Yes Path) */}
+                <path
+                  d="M 400,1690 L 400,1750"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-green)"
+                />
+
+                {/* Line 14: PR Promotion -> Account Connected Guard */}
+                <path
+                  d="M 400,1880 L 400,1940"
+                  fill="none"
+                  stroke="#a1a1aa"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-gray)"
+                />
+
+                {/* Line 15: Guard -> PR Active Oval (No Path) */}
+                <path
+                  d="M 340,2000 L 240,2000"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-green)"
+                />
+
+                {/* Line 16: Guard -> Autonomic Teardown (Yes Path: Disconnect) */}
+                <path
+                  d="M 460,2000 L 560,2000"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2"
+                  markerEnd="url(#arrow-red)"
+                />
+
+
+                {/* ==================== STABLE PATH OVERLAY LABELS ==================== */}
+
+                {/* Yes Label for Private Diamond */}
+                <g>
+                  <rect x="230" y="250" width="110" height="25" rx="4" fill="#fee2e2" stroke="#fca5a5" strokeWidth="1" />
+                  <text x="285" y="266" fill="#991b1b" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">YES (AUTH REQUIRED)</text>
+                </g>
+
+                {/* No Label for Private Diamond */}
+                <g>
+                  <rect x="410" y="350" width="110" height="25" rx="4" fill="#d1fae5" stroke="#6ee7b7" strokeWidth="1" />
+                  <text x="465" y="366" fill="#065f46" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">NO (PUBLIC CLONE)</text>
+                </g>
+
+                {/* Yes Label for Sandbox Failure Diamond */}
+                <g>
+                  <rect x="410" y="970" width="110" height="25" rx="4" fill="#fee2e2" stroke="#fca5a5" strokeWidth="1" />
+                  <text x="465" y="986" fill="#991b1b" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">YES (TRACE FAIL)</text>
+                </g>
+
+                {/* Direct Bypass Label */}
+                <g>
+                  <rect x="490" y="875" width="110" height="25" rx="4" fill="#d1fae5" stroke="#6ee7b7" strokeWidth="1" />
+                  <text x="545" y="891" fill="#065f46" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">NO (BYPASS TRIAGE)</text>
+                </g>
+
+                {/* No Label for pipeline pass retry */}
+                <g>
+                  <rect x="180" y="1640" width="130" height="25" rx="4" fill="#fee2e2" stroke="#fca5a5" strokeWidth="1" />
+                  <text x="245" y="1656" fill="#991b1b" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">NO (REGRESSION RETRY)</text>
+                </g>
+
+                {/* Yes Label for pipeline test pass */}
+                <g>
+                  <rect x="410" y="1700" width="110" height="25" rx="4" fill="#d1fae5" stroke="#6ee7b7" strokeWidth="1" />
+                  <text x="465" y="1716" fill="#065f46" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">YES (ALL CLEAN)</text>
+                </g>
+
+                {/* No Label for disconnect status */}
+                <g>
+                  <rect x="250" y="1970" width="80" height="25" rx="4" fill="#d1fae5" stroke="#6ee7b7" strokeWidth="1" />
+                  <text x="290" y="1986" fill="#065f46" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">NO (ACTIVE)</text>
+                </g>
+
+                {/* Yes Label for disconnect status */}
+                <g>
+                  <rect x="470" y="1970" width="80" height="25" rx="4" fill="#fee2e2" stroke="#fca5a5" strokeWidth="1" />
+                  <text x="510" y="1986" fill="#991b1b" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">YES (CLEANUP)</text>
+                </g>
+
+
+                {/* ==================== FLOWCHART PRESENTATION CARDS ==================== */}
+
+                {/* 1. Repository Import Card */}
+                <g>
+                  <rect x="280" y="40" width="240" height="120" rx="12" fill="#ffffff" stroke="#e4e4e7" strokeWidth="1.5" />
+                  <text x="294" y="62" fill="#18181b" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">GITHUB REPO IMPORT</text>
+                  
+                  {/* Badge [NEW] */}
+                  <rect x="442" y="52" width="28" height="13" rx="3" fill="#ffe4cc" stroke="#ffb380" strokeWidth="0.5" />
+                  <text x="446" y="61" fill="#cc5200" fontSize="7" fontFamily="monospace" fontWeight="bold">NEW</text>
+                  
+                  {/* Badge [ATTN] */}
+                  <rect x="476" y="52" width="30" height="13" rx="3" fill="#fff7e6" stroke="#ffe0b3" strokeWidth="0.5" />
+                  <text x="481" y="61" fill="#b37700" fontSize="7" fontFamily="monospace" fontWeight="bold">ATTN</text>
+                  
+                  {/* Code box mock */}
+                  <rect x="294" y="78" width="212" height="20" rx="4" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                  <circle cx="304" cy="88" r="3" fill="#6366f1" />
+                  <text x="314" y="91" fill="#3f3f46" fontSize="7.5" fontFamily="monospace">github.com/vibecheck-ai/mock...</text>
+                  <rect x="488" y="82" width="14" height="12" rx="2" fill="#18181b" />
+                  <text x="491" y="90" fill="#ffffff" fontSize="6" fontFamily="monospace">GO</text>
+                  
+                  {/* Description */}
+                  <text x="294" y="114" fill="#71717a" fontSize="8.5" fontFamily="sans-serif">
+                    <tspan x="294" dy="0">User inputs remote Git URL to start the autonomic</tspan>
+                    <tspan x="294" dy="12">workspace pipeline.</tspan>
+                  </text>
+                </g>
+
+                {/* 2. Is Private Decision Diamond */}
+                <g>
+                  <polygon points="400,220 460,280 400,340 340,280" fill="#eff6ff" stroke="#3b82f6" strokeWidth="1.5" />
+                  <text x="400" y="283" fill="#1e3a8a" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Is Repo Private?</text>
+                </g>
+
+                {/* 3. OAuth Token Handshake Oval */}
+                <g>
+                  <ellipse cx="130" cy="280" rx="90" ry="40" fill="#fffbeb" stroke="#f59e0b" strokeWidth="1.5" />
+                  <text x="130" y="272" fill="#b45309" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">OAUTH HANDSHAKE</text>
+                  <text x="130" y="286" fill="#78350f" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="130" dy="0">Exchange keys to fetch private</tspan>
+                    <tspan x="130" dy="11">repo paths securely.</tspan>
+                  </text>
+                </g>
+
+                {/* 4. Workspace Sync Init Oval */}
+                <g>
+                  <ellipse cx="400" cy="440" rx="100" ry="40" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
+                  <text x="400" y="432" fill="#047857" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">WORKSPACE LOCAL INIT</text>
+                  <text x="400" y="446" fill="#065f46" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="400" dy="0">System creates local workspace and</tspan>
+                    <tspan x="400" dy="11">syncs metadata in db.json.</tspan>
+                  </text>
+                </g>
+
+                {/* 5. [NEW] Graphify Structural dependency analysis Oval */}
+                <g>
+                  <ellipse cx="400" cy="540" rx="115" ry="35" fill="#f5f3ff" stroke="#8b5cf6" strokeWidth="1.5" />
+                  <text x="400" y="532" fill="#6d28d9" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">GRAPHIFY DEPS MAPPER</text>
+                  <text x="400" y="546" fill="#4c1d95" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="400" dy="0">Parses cloned repo to map AST nodes</tspan>
+                    <tspan x="400" dy="11">and cross-file structural dependencies.</tspan>
+                  </text>
+                </g>
+
+                {/* 6. Sandbox Interactive Cockpit Card */}
+                <g>
+                  <rect x="280" y="640" width="240" height="140" rx="12" fill="#ffffff" stroke="#e4e4e7" strokeWidth="1.5" />
+                  <text x="294" y="662" fill="#18181b" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SANDBOX COCKPIT</text>
+                  
+                  {/* Badge [NEW] */}
+                  <rect x="442" y="652" width="28" height="13" rx="3" fill="#ffe4cc" stroke="#ffb380" strokeWidth="0.5" />
+                  <text x="446" y="661" fill="#cc5200" fontSize="7" fontFamily="monospace" fontWeight="bold">NEW</text>
+                  
+                  {/* Badge [REVW] */}
+                  <rect x="476" y="652" width="30" height="13" rx="3" fill="#e6f2ff" stroke="#b3d7ff" strokeWidth="0.5" />
+                  <text x="481" y="661" fill="#0066cc" fontSize="7" fontFamily="monospace" fontWeight="bold">REVW</text>
+                  
+                  {/* Split diff mock */}
+                  <rect x="294" y="678" width="212" height="32" rx="4" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                  <line x1="300" y1="686" x2="360" y2="686" stroke="#d4d4d8" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="300" y1="692" x2="350" y2="692" stroke="#d4d4d8" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="300" y1="698" x2="355" y2="698" stroke="rgba(99, 102, 241, 0.5)" strokeWidth="3" strokeLinecap="round" />
+                  
+                  <line x1="370" y1="682" x2="370" y2="706" stroke="#e4e4e7" strokeWidth="0.5" />
+                  
+                  <text x="376" y="688" fill="#71717a" fontSize="5" fontFamily="monospace" fontWeight="bold">CODE DIFF VIEW</text>
+                  <line x1="376" y1="694" x2="496" y2="694" stroke="rgba(16, 185, 129, 0.5)" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="376" y1="700" x2="480" y2="700" stroke="rgba(244, 63, 94, 0.5)" strokeWidth="3" strokeLinecap="round" />
+                  
+                  {/* Description */}
+                  <text x="294" y="734" fill="#71717a" fontSize="8.5" fontFamily="sans-serif">
+                    <tspan x="294" dy="0">Loads buggy repository structure inside fully secure,</tspan>
+                    <tspan x="294" dy="12">isolated sandbox editor cockpit.</tspan>
+                  </text>
+                </g>
+
+                {/* 7. Sandbox Build Fail Decision Diamond */}
+                <g>
+                  <polygon points="400,840 460,900 400,960 340,900" fill="#fff1f2" stroke="#f43f5e" strokeWidth="1.5" />
+                  <text x="400" y="903" fill="#9f1239" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Tests Fail?</text>
+                </g>
+
+                {/* 8. AI Multi-Model Triage Engine Card */}
+                <g>
+                  <rect x="280" y="1020" width="240" height="140" rx="12" fill="#ffffff" stroke="#e4e4e7" strokeWidth="1.5" />
+                  <text x="294" y="1042" fill="#18181b" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">AI TRIAGE ENGINE</text>
+                  
+                  {/* Badge [ASAP] */}
+                  <rect x="442" y="1032" width="28" height="13" rx="3" fill="#ffe6e6" stroke="#ffb3b3" strokeWidth="0.5" />
+                  <text x="446" y="1041" fill="#cc0000" fontSize="7" fontFamily="monospace" fontWeight="bold">ASAP</text>
+                  
+                  {/* Badge [ATTN] */}
+                  <rect x="476" y="1032" width="30" height="13" rx="3" fill="#fff7e6" stroke="#ffe0b3" strokeWidth="0.5" />
+                  <text x="481" y="1041" fill="#b37700" fontSize="7" fontFamily="monospace" fontWeight="bold">ATTN</text>
+                  
+                  {/* Progress mock */}
+                  <rect x="294" y="1058" width="212" height="32" rx="4" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                  <text x="300" y="1068" fill="#71717a" fontSize="5.5" fontFamily="monospace">COMPRESSED STACK TRACE LOGS</text>
+                  <text x="446" y="1068" fill="#10b981" fontSize="5.5" fontFamily="monospace" fontWeight="bold">94% CONFIDENCE</text>
+                  <rect x="300" y="1076" width="200" height="6" rx="2" fill="#e4e4e7" />
+                  <rect x="300" y="1076" width="180" height="6" rx="2" fill="#6366f1" />
+                  
+                  {/* Description */}
+                  <text x="294" y="1114" fill="#71717a" fontSize="8.5" fontFamily="sans-serif">
+                    <tspan x="294" dy="0">Parses traces. Calls GPT-4o-mini to output highly</tspan>
+                    <tspan x="294" dy="12">structured AST corrective patches.</tspan>
+                  </text>
+                </g>
+
+                {/* 9. Human in the Loop Grilling Chat Oval */}
+                <g>
+                  <ellipse cx="400" cy="1260" rx="100" ry="40" fill="#f0f9ff" stroke="#0ea5e9" strokeWidth="1.5" />
+                  <text x="400" y="1252" fill="#0369a1" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">DEVELOPER GRILLING CHAT</text>
+                  <text x="400" y="1266" fill="#0c4a6e" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="400" dy="0">Iterate, dialogue, and refine structural</tspan>
+                    <tspan x="400" dy="11">fixes in real-time.</tspan>
+                  </text>
+                </g>
+
+                {/* 10. Docker Container Verification Pipeline Card */}
+                <g>
+                  <rect x="280" y="1360" width="240" height="150" rx="12" fill="#ffffff" stroke="#e4e4e7" strokeWidth="1.5" />
+                  <text x="294" y="1382" fill="#18181b" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">DOCKER TEST PIPELINE</text>
+                  
+                  {/* Badge [NEW] */}
+                  <rect x="442" y="1372" width="28" height="13" rx="3" fill="#ffe4cc" stroke="#ffb380" strokeWidth="0.5" />
+                  <text x="446" y="1381" fill="#cc5200" fontSize="7" fontFamily="monospace" fontWeight="bold">NEW</text>
+                  
+                  {/* Badge [DONE] */}
+                  <rect x="476" y="1372" width="30" height="13" rx="3" fill="#e6ffe6" stroke="#b3ffb3" strokeWidth="0.5" />
+                  <text x="481" y="1381" fill="#008000" fontSize="7" fontFamily="monospace" fontWeight="bold">DONE</text>
+                  
+                  {/* Grid steps */}
+                  <g>
+                    <rect x="294" y="1398" width="64" height="16" rx="2" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                    <circle cx="302" cy="1406" r="2.5" fill="#10b981" />
+                    <text x="310" y="1409" fill="#3f3f46" fontSize="6" fontFamily="monospace">Security</text>
+                  </g>
+                  <g>
+                    <rect x="368" y="1398" width="64" height="16" rx="2" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                    <circle cx="376" cy="1406" r="2.5" fill="#10b981" />
+                    <text x="384" y="1409" fill="#3f3f46" fontSize="6" fontFamily="monospace">Billing</text>
+                  </g>
+                  <g>
+                    <rect x="442" y="1398" width="64" height="16" rx="2" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                    <circle cx="450" cy="1406" r="2.5" fill="#10b981" />
+                    <text x="458" y="1409" fill="#3f3f46" fontSize="6" fontFamily="monospace">Database</text>
+                  </g>
+                  
+                  {/* Description */}
+                  <text x="294" y="1438" fill="#71717a" fontSize="8.5" fontFamily="sans-serif">
+                    <tspan x="294" dy="0">Executes sterile container test suite (Init</tspan>
+                    <tspan x="294" dy="12">and Security and Billing and DB and Webhook).</tspan>
+                  </text>
+                </g>
+
+                {/* 11. Did Docker Test Pass Decision Diamond */}
+                <g>
+                  <polygon points="400,1570 460,1630 400,1690 340,1630" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
+                  <text x="400" y="1633" fill="#065f46" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Tests Pass?</text>
+                </g>
+
+                {/* 12. Autonomic PR Promotion Card */}
+                <g>
+                  <rect x="280" y="1750" width="240" height="130" rx="12" fill="#ffffff" stroke="#e4e4e7" strokeWidth="1.5" />
+                  <text x="294" y="1772" fill="#18181b" fontSize="9" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">AUTONOMIC PR PROMOTE</text>
+                  
+                  {/* Badge [DONE] */}
+                  <rect x="442" y="1762" width="28" height="13" rx="3" fill="#e6ffe6" stroke="#b3ffb3" strokeWidth="0.5" />
+                  <text x="446" y="1771" fill="#008000" fontSize="7" fontFamily="monospace" fontWeight="bold">DONE</text>
+                  
+                  {/* Badge [REVW] */}
+                  <rect x="476" y="1762" width="30" height="13" rx="3" fill="#e6f2ff" stroke="#b3d7ff" strokeWidth="0.5" />
+                  <text x="481" y="1771" fill="#0066cc" fontSize="7" fontFamily="monospace" fontWeight="bold">REVW</text>
+                  
+                  {/* Status mock */}
+                  <rect x="294" y="1788" width="212" height="20" rx="4" fill="#f4f4f5" stroke="#e4e4e7" strokeWidth="0.75" />
+                  <text x="300" y="1801" fill="#3f3f46" fontSize="6.5" fontFamily="monospace" fontWeight="bold">PR #14 Promoted successfully!</text>
+                  <rect x="452" y="1792" width="50" height="12" rx="2" fill="#6366f1" />
+                  <text x="477" y="1800" fill="#ffffff" fontSize="5.5" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Back to Repo</text>
+                  
+                  {/* Description */}
+                  <text x="294" y="1826" fill="#71717a" fontSize="8.5" fontFamily="sans-serif">
+                    <tspan x="294" dy="0">Stages modifications. Auto-commits and pushes</tspan>
+                    <tspan x="294" dy="12">branch upstream. Creates PR autonomously.</tspan>
+                  </text>
+                </g>
+
+                {/* 13. Account Integration connected safety diamond */}
+                <g>
+                  <polygon points="400,1940 460,2000 400,2060 340,2000" fill="#fffbeb" stroke="#f59e0b" strokeWidth="1.5" />
+                  <text x="400" y="2003" fill="#78350f" fontSize="9" fontFamily="sans-serif" fontWeight="bold" textAnchor="middle">Disconnected?</text>
+                </g>
+
+                {/* 14. PR Status Button transition Oval */}
+                <g>
+                  <ellipse cx="140" cy="2000" rx="100" ry="40" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
+                  <text x="140" y="1992" fill="#047857" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">PR STATUS MONITORING</text>
+                  <text x="140" y="2006" fill="#065f46" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="140" dy="0">"Open Sandbox" button transforms</tspan>
+                    <tspan x="140" dy="11">to "PR Status" tracker.</tspan>
+                  </text>
+                </g>
+
+                {/* 15. Emergency Cleanup Autonomic Teardown Oval */}
+                <g>
+                  <ellipse cx="660" cy="2000" rx="100" ry="40" fill="#fff1f2" stroke="#f43f5e" strokeWidth="1.5" />
+                  <text x="660" y="1992" fill="#b91c1c" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">AUTONOMIC TEARDOWN</text>
+                  <text x="660" y="2006" fill="#9f1239" fontSize="8.5" fontFamily="sans-serif" textAnchor="middle">
+                    <tspan x="660" dy="0">Emergency cleanup: Wipes all container</tspan>
+                    <tspan x="660" dy="11">workspaces automatically!</tspan>
+                  </text>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
   // 2. Storage Database Console Workspace View (tab: 'database')
   const renderDatabaseWorkspace = () => {
     return (
@@ -1290,7 +1790,7 @@ tests/test_payment.py .                                                  [100%]
       let s5 = 'passed';
       let s6 = 'passed';
 
-      if (isTriage || build.status === 'HEALING') {
+      if (isTriage || build.status === 'REPAIRING') {
         if (build.target_scenario?.includes('Syntax Error') || String(build.id) === '103') {
           s3 = 'failed';
           s4 = 'failed'; // Cascade imports
@@ -1323,7 +1823,7 @@ tests/test_payment.py .                                                  [100%]
         <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 rounded-xl p-5 space-y-4 max-w-4xl select-text">
           <div className="flex items-center space-x-2 border-b border-zinc-200 dark:border-zinc-900 pb-2">
             <Activity className="h-4 w-4 text-zinc-500" />
-            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Stages / Jobs Execution</h4>
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">test cases</h4>
           </div>
 
           <div className="space-y-4 font-mono text-xs">
@@ -1422,7 +1922,8 @@ tests/test_payment.py .                                                  [100%]
         </div>
 
         {/* Master Workspace Detail Panel */}
-        <div className="flex-1 flex overflow-hidden h-full bg-white dark:bg-[#090909]">
+        <div className="flex-1 flex flex-col overflow-hidden h-full p-4 pl-0 bg-transparent">
+          <div className="flex-1 flex flex-col overflow-hidden h-full bg-white dark:bg-[#1c1c1c] border border-zinc-200 dark:border-[#262626] rounded-2xl shadow-sm">
           
           {selectedBuild === 'custom_triage' ? (
             renderCustomTriageConsole()
@@ -1433,7 +1934,7 @@ tests/test_payment.py .                                                  [100%]
               <div className="border-b border-zinc-200 dark:border-zinc-900/80 pb-3 mb-4 shrink-0 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1.5 font-mono text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">
-                    <span>Pipelines</span>
+                    <span>Test Pipelines</span>
                     <ChevronRight className="h-3 w-3" />
                     <span>VibeCheck CI-CD</span>
                     <ChevronRight className="h-3 w-3" />
@@ -1445,8 +1946,8 @@ tests/test_payment.py .                                                  [100%]
                     <span className="text-[9px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 px-2 py-0.5 rounded border border-emerald-250 dark:border-emerald-900/30">SUCCEEDED</span>
                   ) : selectedBuild.status === 'PENDING_APPROVAL' ? (
                     <span className="text-[9px] font-mono font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 px-2 py-0.5 rounded border border-amber-250 dark:border-amber-900/30 animate-pulse">NEEDS ATTENTION</span>
-                  ) : selectedBuild.status === 'HEALING' ? (
-                    <span className="text-[9px] font-mono font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 animate-pulse">HEALING RUN</span>
+                  ) : selectedBuild.status === 'REPAIRING' ? (
+                    <span className="text-[9px] font-mono font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 animate-pulse">REPAIRING RUN</span>
                   ) : (
                     <span className="text-[9px] font-mono font-bold bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-450 px-2 py-0.5 rounded border border-red-250 dark:border-red-900/30">FAILED</span>
                   )}
@@ -1521,7 +2022,7 @@ tests/test_payment.py .                                                  [100%]
                           onDiagnose={handleDiagnose}
                         />
 
-                        {selectedBuild.status !== 'HEALING' && (
+                        {selectedBuild.status !== 'REPAIRING' && (
                           <div className="pb-6">
                             <DiffViewer
                               filePath={selectedBuild.patch.file_path}
@@ -1563,6 +2064,7 @@ tests/test_payment.py .                                                  [100%]
             </div>
           )}
 
+          </div>
         </div>
 
       </div>
@@ -1577,6 +2079,14 @@ tests/test_payment.py .                                                  [100%]
       activeTab={activeTab}
       onChangeTab={(tab) => {
         console.log(`[Router] Changed active view tab to: ${tab}`);
+        if (tab === 'home') {
+          router.push('/');
+          return;
+        }
+        if (tab === 'how-it-works') {
+          router.push('/how-it-works');
+          return;
+        }
         setActiveTab(tab);
         const mappedRoute = tabToRouteMap[tab];
         if (mappedRoute) {
@@ -1596,9 +2106,6 @@ tests/test_payment.py .                                                  [100%]
         </div>
         <div className="flex-1 overflow-y-auto h-full" style={{ display: activeTab === 'keys' ? 'block' : 'none' }}>
           {renderCredentialsWorkspace()}
-        </div>
-        <div className="flex-1 overflow-y-auto h-full" style={{ display: activeTab === 'guide' ? 'block' : 'none' }}>
-          <UserGuide />
         </div>
         <div className="flex-1 overflow-hidden h-full" style={{ display: activeTab === 'repos' ? 'flex' : 'none' }}>
           <RepoManager 

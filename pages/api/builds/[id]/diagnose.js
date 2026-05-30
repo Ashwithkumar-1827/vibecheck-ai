@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
       console.log(`[Diagnose API] Triggering AI diagnosis for Build #${id}...`);
 
-      // Call the AI to analyze the logs — fully dynamic, no hardcoded answers
+      // Call the AI to analyze the logs: fully dynamic, no hardcoded answers
       const diagnosis = await diagnosePipeline(build.log_output);
 
       if (diagnosis.error) {

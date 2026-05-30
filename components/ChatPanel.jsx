@@ -10,7 +10,7 @@ import { MessageSquare, Send, Loader2, X, Bot, User } from 'lucide-react';
  *  - isOpen: boolean — whether the chat panel is visible
  *  - onClose: () => void — callback to close the panel
  */
-export default function ChatPanel({ buildId, isOpen, onClose }) {
+export default function ChatPanel({ buildId, isOpen, onClose, onUpdatePatch }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +95,15 @@ export default function ChatPanel({ buildId, isOpen, onClose }) {
       }
 
       const data = await res.json();
+
+      // If AI modified the patch, trigger the callback!
+      if (data.modifyCode && onUpdatePatch) {
+        onUpdatePatch({
+          originalCode: data.originalCode,
+          patchedCode: data.patchedCode,
+          explanation: data.reply
+        });
+      }
 
       // Add AI response
       const aiMsg = {

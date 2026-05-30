@@ -178,10 +178,10 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-white text-zinc-900 dark:bg-[#090909] dark:text-zinc-50">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-transparent text-zinc-900 dark:bg-transparent dark:text-zinc-550">
       
       {/* LEFT COLUMN: Controls & Info (Width: 320px) */}
-      <div className="w-full md:w-80 shrink-0 border-r border-zinc-200/80 dark:border-zinc-900/60 p-6 flex flex-col justify-between overflow-y-auto scrollbar-thin">
+      <div className="w-full md:w-80 shrink-0 border-r border-zinc-200/80 dark:border-[#262626] p-6 flex flex-col justify-between overflow-y-auto scrollbar-thin">
         <div className="space-y-6">
           
           {/* Repository Context Card Selector */}
@@ -195,7 +195,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
                 const r = repos.find(x => x.id === e.target.value);
                 if (r) setActiveRepo(r);
               }}
-              className="w-full px-4 py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:border-zinc-900 rounded-xl text-xs font-mono focus:outline-none transition-colors text-zinc-900 dark:text-white"
+              className="w-full px-4 py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 dark:bg-[#090909] dark:hover:bg-[#1c1c1c] dark:border-[#262626] rounded-xl text-xs font-mono focus:outline-none transition-colors text-zinc-900 dark:text-white"
             >
               {repos.length === 0 && <option value="">No Active Sandboxes</option>}
               {repos.map(r => (
@@ -206,10 +206,10 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
             </select>
           </div>
 
-          <div className="w-full h-[1px] bg-zinc-200 dark:bg-zinc-900/85" />
+          <div className="w-full h-[1px] bg-zinc-200 dark:bg-[#262626]/85" />
 
           {/* Action Trigger Card */}
-          <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 space-y-4">
+          <div className="bg-zinc-50 dark:bg-[#1c1c1c] border border-zinc-200/60 dark:border-[#262626] rounded-2xl p-5 space-y-4">
             <h4 className="text-[10px] uppercase font-mono tracking-wider font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
               Pipeline Control
             </h4>
@@ -261,7 +261,7 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
                 <button
                   onClick={handleDiagnose}
                   disabled={isDiagnosing}
-                  className="w-full py-3 bg-red-650 hover:bg-red-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-900 dark:hover:bg-zinc-850 dark:border dark:border-zinc-800"
+                  className="w-full py-3 bg-red-650 hover:bg-red-700 disabled:opacity-50 text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98 bg-zinc-950 hover:bg-zinc-900 dark:bg-[#090909] dark:hover:bg-[#1c1c1c] dark:border dark:border-[#262626]"
                 >
                   {isDiagnosing ? (
                     <>
@@ -354,10 +354,10 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
           </div>
 
           {diagnosis && (
-            <div className="h-1/2 bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 flex flex-col overflow-hidden shadow-sm animate-slideUp">
+            <div className="h-1/2 bg-zinc-50 border border-zinc-200/60 dark:bg-[#1c1c1c] dark:border-[#262626] rounded-2xl p-5 flex flex-col overflow-hidden shadow-sm animate-slideUp">
               
               {/* Diagnosis header */}
-              <div className="flex items-center justify-between mb-3 border-b border-zinc-250/20 dark:border-zinc-900/60 pb-3 shrink-0">
+              <div className="flex items-center justify-between mb-3 border-b border-zinc-250/20 dark:border-[#262626]/60 pb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                   <Sparkles className="h-4.5 w-4.5 text-indigo-500" />
                   <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-zinc-900 dark:text-white">
@@ -379,14 +379,14 @@ export default function PipelineConsole({ selectedRepo, onNavigateToSandbox }) {
                 </div>
 
                 {/* Diff box */}
-                <div className="border border-zinc-200 dark:border-zinc-900 rounded-xl overflow-hidden text-[10px]">
-                  <div className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-900 font-bold text-zinc-400 uppercase tracking-wider text-[9px]">
+                <div className="border border-zinc-200 dark:border-[#262626] rounded-xl overflow-hidden text-[10px]">
+                  <div className="px-4 py-2 bg-zinc-100 dark:bg-[#090909] border-b border-zinc-200 dark:border-[#262626] font-bold text-zinc-400 uppercase tracking-wider text-[9px]">
                     Unified Hotfix Patch Preview
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 text-xs font-mono h-40 overflow-y-auto">
                     
                     {/* Buggy Original */}
-                    <div className="p-3 bg-red-500/5 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-900 space-y-1">
+                    <div className="p-3 bg-red-500/5 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-[#262626] space-y-1">
                       <span className="text-[8px] uppercase font-bold text-red-500 block mb-2">Original Buggy Segment</span>
                       <pre className="text-red-500 bg-red-500/10 p-2.5 rounded-lg whitespace-pre-wrap font-bold border border-red-500/20">{diagnosis.originalCode}</pre>
                     </div>

@@ -3,7 +3,7 @@ import { BookOpen, CheckCircle, GitBranch, Key, Network, ShieldCheck, Sparkles, 
 
 function GuideSection({ number, icon: Icon, title, children }) {
   return (
-    <section className="border-b border-zinc-200 dark:border-zinc-900 pb-8">
+    <section className="border-b border-zinc-200 dark:border-[#262626] pb-8">
       <div className="flex items-start gap-4">
         <div className="h-9 w-9 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shrink-0">
           <Icon className="h-4.5 w-4.5" />
@@ -20,9 +20,9 @@ function GuideSection({ number, icon: Icon, title, children }) {
 
 export default function UserGuide() {
   return (
-    <div className="flex-1 overflow-y-auto bg-white dark:bg-[#090909] text-zinc-900 dark:text-zinc-50">
+    <div className="flex-1 overflow-y-auto bg-transparent dark:bg-transparent text-zinc-900 dark:text-zinc-50">
       <div className="max-w-5xl mx-auto px-8 py-10 space-y-9">
-        <header className="border-b border-zinc-200 dark:border-zinc-900 pb-8">
+        <header className="border-b border-zinc-200 dark:border-[#262626] pb-8">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center">
               <BookOpen className="h-5 w-5" />

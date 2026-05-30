@@ -36,11 +36,14 @@ export default async function handler(req, res) {
       patchedCode: String(context.patchedCode || '')
     };
 
-    const reply = await chatWithAI(buildContext, message.trim(), cleanHistory);
+    const result = await chatWithAI(buildContext, message.trim(), cleanHistory);
 
     return res.status(200).json({
       sandboxId,
-      reply
+      reply: typeof result === 'string' ? result : result.reply,
+      modifyCode: result.modifyCode || false,
+      originalCode: result.originalCode || '',
+      patchedCode: result.patchedCode || ''
     });
   } catch (err) {
     console.error('[Sandbox Chat API Error]:', err);

@@ -62,10 +62,22 @@ export default async function handler(req, res) {
       console.log(`[Chat API] Build #${id}: Processing user question: "${message.trim().substring(0, 80)}..."`);
 
       // Call the AI
-      const reply = await chatWithAI(buildContext, message.trim(), chatHistory);
+      const aiResponse = await chatWithAI(buildContext, message.trim(), chatHistory);
+      
+      const reply = typeof aiResponse === 'string' ? aiResponse : aiResponse.reply;
 
       // Store the AI's response
       db.addChatMessage(id, 'assistant', reply);
+
+      // If modifyCode is true, we update the patch in the DB!
+      if (typeof aiResponse !== 'string' && aiResponse.modifyCode && build.patch) {
+        db.updatePatchCode(
+          build.patch.id,
+          aiResponse.originalCode,
+          aiResponse.patchedCode,
+          aiResponse.explanation || reply
+        );
+      }
 
       // Return updated history
       const updatedHistory = db.getChatHistory(id);
@@ -74,6 +86,9 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         reply,
+        modifyCode: typeof aiResponse !== 'string' ? aiResponse.modifyCode : false,
+        originalCode: typeof aiResponse !== 'string' ? aiResponse.originalCode : '',
+        patchedCode: typeof aiResponse !== 'string' ? aiResponse.patchedCode : '',
         history: updatedHistory
       });
     } catch (err) {

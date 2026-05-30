@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { getRepos, upsertRepo } from '../../../lib/repos';
 import { createContainer } from '../../../lib/container';
 import { createSandbox } from '../../../lib/sandbox';
@@ -93,6 +95,26 @@ export default async function handler(req, res) {
       newRepo.detection = metadata.detection || null;
       newRepo.knowledgeGraph = metadata.knowledgeGraph || null;
       newRepo.containerStatus = 'running';
+
+      // Check if no pipeline files exist
+      const workspacePath = path.join(process.cwd(), 'scratch', 'containers', containerId, 'workspace');
+      const hasNoPipeline = !fs.existsSync(workspacePath) || (
+        !fs.existsSync(path.join(workspacePath, 'package.json')) &&
+        !fs.existsSync(path.join(workspacePath, 'requirements.txt')) &&
+        !fs.existsSync(path.join(workspacePath, 'setup.py')) &&
+        !fs.existsSync(path.join(workspacePath, 'pom.xml')) &&
+        !fs.existsSync(path.join(workspacePath, 'build.gradle')) &&
+        !fs.existsSync(path.join(workspacePath, 'azure-pipelines.yml')) &&
+        !fs.existsSync(path.join(workspacePath, '.gitlab-ci.yml')) &&
+        !fs.existsSync(path.join(workspacePath, 'Jenkinsfile')) &&
+        !fs.existsSync(path.join(workspacePath, '.github', 'workflows'))
+      );
+
+      if (hasNoPipeline) {
+        newRepo.hasNoPipeline = true;
+        if (!newRepo.detection) newRepo.detection = {};
+        newRepo.detection.hasCICD = false;
+      }
 
       upsertRepo(newRepo);
 
