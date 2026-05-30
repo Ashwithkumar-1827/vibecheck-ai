@@ -1,0 +1,46 @@
+# =========================================================================
+# VibeCheck AI - Render Blueprint Specification
+# =========================================================================
+# Deploy this Blueprint to spin up a fully functional production environment
+# for VibeCheck AI on Render in seconds.
+# =========================================================================
+
+services:
+  - type: web
+    name: vibecheck-ai
+    env: node
+    plan: free # Deploys on the free tier by default
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      # Node settings
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+      # Google Gemini (Required for autonomic log triage and corrective patch generation)
+      - key: GEMINI_API_KEY
+        sync: false
+        placeholder: "Enter your Google Gemini API Key (e.g. AQ...)"
+
+      # OpenAI API Key (Optional, fallback diagnostic model)
+      - key: OPENAI_API_KEY
+        sync: false
+        placeholder: "Optional: Enter your OpenAI API Key (e.g. sk-...)"
+
+      # GitHub Integration (Required for Repository syncing & PR Promotion)
+      - key: GITHUB_CLIENT_ID
+        sync: false
+        placeholder: "Enter your GitHub OAuth Application Client ID"
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+        placeholder: "Enter your GitHub OAuth Application Client Secret"
+      - key: GITHUB_REDIRECT_URI
+        sync: false
+        placeholder: "Enter callback URL (e.g. https://your-app.onrender.com/api/github/callback)"
+
+      # Default GitHub Access Token (Optional fallback token)
+      - key: GITHUB_ACCESS_TOKEN
+        sync: false
+        placeholder: "Optional: Enter default GitHub Personal Access Token"
