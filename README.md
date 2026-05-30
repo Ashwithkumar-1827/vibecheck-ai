@@ -1,4 +1,4 @@
-# VibeCheck AI ⚡ — Autonomous Self-Healing CI/CD Platform
+# VibeCheck AI ⚡ | Autonomous Self-Correcting CI/CD Platform
 
 [![GitHub](https://img.shields.io/badge/GitHub-OAuth_Integration-181717?style=for-the-badge&logo=github)](https://github.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.x-000000?style=for-the-badge&logo=next.js)](https://nextjs.org)
@@ -6,13 +6,13 @@
 [![Docker](https://img.shields.io/badge/Docker-Sandboxed_Execution-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](https://opensource.org)
 
-**VibeCheck AI** is an autonomous, self-healing developer automation platform. By directly wrapping your CI/CD execution pipeline with active AI-driven diagnostic layers, it catches compilation and runtime test failures inside isolated sandbox environments, diagnoses root causes, generates precision patches, verifies the healed code, and opens PRs on GitHub—all in seconds without human manual log parsing.
+**VibeCheck AI** is an autonomous, self-correcting developer automation platform. By directly wrapping your CI/CD execution pipeline with active AI-driven diagnostic layers, it catches compilation and runtime test failures inside isolated sandbox environments, diagnoses root causes, generates precision patches, verifies the repaired code, and opens PRs on GitHub, all in seconds without human manual log parsing.
 
 ---
 
 ## 🏗️ Core Architectural Features & Capabilities
 
-VibeCheck AI is built around a secure, resilient, and zero-trust self-healing loop:
+VibeCheck AI is built around a secure, resilient, and zero-trust self-correcting loop:
 
 1.  **Multi-Model Gemini Fallback Chain**
     *   Features a prioritized multi-model routing chain: **Gemini 3.5 Flash** ➡️ **Gemini 3.1 Flash Lite**.
@@ -50,26 +50,7 @@ In modern microservice architectures, repositories are rarely self-contained. A 
 *   **The challenge**: An AI looking only at a single failing service log will try to patch the symptom locally rather than fixing the shared bug at its source, leading to code duplication or regression.
 
 **The Solution:**
-Upon importing a repository, VibeCheck parses the code imports, exports, classes, and method signatures into a visual **Dependency Knowledge Graph (Graphify)**. When a build fails, the Gemini diagnostic agent queries the Knowledge Graph to trace the import tree:
-*   It visualizes the shared dependencies across all modules.
-*   It identifies the root core dependency causing the cascade (for instance, a token verification bug in `core/security.py` breaking both `billing.py` and `report_engine.py`).
-*   It generates a single, high-precision root-level patch that heals the entire downstream microservice suite in one operation.
-
----
-
-## 📸 Platform Showcase
-
-### 1. High-Fidelity Landing Page (Framer-Inspired)
-![Landing Page](public/screenshots/landing_page.png)
-
-### 2. Autonomic Pipelines Cockpit (Real-time Run Logs)
-![Pipelines Console](public/screenshots/pipelines.png)
-
-### 3. GitHub OAuth & Sandbox Repository Manager
-![Repository Manager](public/screenshots/repositories.png)
-
-### 4. Twin Container Sandbox Control Room
-![Sandbox Workspace](public/screenshots/sandbox.png)
+*   It generates a single, high-precision root-level patch that repairs the entire downstream microservice suite in one operation.
 
 ---
 
@@ -170,22 +151,9 @@ This builds `vibecheck-node` and `vibecheck-python` images to support native con
 
 ---
 
-## 🤖 The Self-Healing Workflow (How it Works)
+## 🤖 The Self-Correcting Workflow (How it Works)
 
-```
-[git commit/push] ➔ [Trigger Build API] ➔ [Clone Repo into Container]
-                                                        │
-[Build Passed] 🖲️ Merged                                ▼
-    ▲                                           [Pipeline Failed]
-    │                                                   │
-[Twin Sandbox Re-Test Passes]                           ▼
-    ▲                                           [Read Traceback Logs]
-    │                                                   │
-[Approve Patch] 🗪 Chat Vetting                          ▼
-    ▲                                           [Gemini Double-Pass Triage]
-    │                                                   │
-    └────────────────────────────────────────── [Generate Code Patch]
-```
+![VibeCheck AI Application Flow](public/vibecheck-application-flow.png)
 
 1.  **Trigger Pipeline**: An install, build, or test stage fails.
 2.  **Double-Pass Triage**: Gemini reads the traceback logs, extracts the buggy files relative to the repository path inside the sandbox container, and generates a block diff.
