@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { getRepos } from '../../../lib/repos';
+import { getUserFromRequest } from '../../../lib/session';
 
 const SCRATCH_DIR = path.join(process.cwd(), 'scratch');
 const CONTAINER_STORE = path.join(SCRATCH_DIR, 'containers');
@@ -28,9 +30,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const username = await getUserFromRequest(req);
+    if (!username) {
+      return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+    }
+
     const { sandboxId } = req.query;
     if (!sandboxId || typeof sandboxId !== 'string') {
       return res.status(400).json({ error: 'sandboxId is required.' });
+    }
+
+    // Verify ownership of the sandbox
+    const repo = getRepos().find(r => r.sandboxId === sandboxId);
+    if (!repo || repo.user !== username) {
+      return res.status(404).json({ error: "Sandbox not found" });
     }
 
     const workspace = resolveWorkspace(sandboxId);

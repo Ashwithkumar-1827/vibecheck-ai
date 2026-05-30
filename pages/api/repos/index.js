@@ -3,6 +3,7 @@ import path from 'path';
 import { getRepos, upsertRepo } from '../../../lib/repos';
 import { createContainer } from '../../../lib/container';
 import { createSandbox } from '../../../lib/sandbox';
+import { getUserFromRequest, getGitHubToken } from '../../../lib/session';
 
 function parseGitHubRepoUrl(repoUrl) {
   const parsed = new URL(repoUrl);
@@ -32,7 +33,11 @@ function isSafeGitRef(ref) {
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const list = getRepos();
+      const username = await getUserFromRequest(req);
+      if (!username) {
+        return res.status(200).json([]);
+      }
+      const list = getRepos().filter(r => r.user === username);
       return res.status(200).json(list);
     } catch (err) {
       console.error(err);
@@ -42,6 +47,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
+      const token = getGitHubToken(req);
+      const username = await getUserFromRequest(req);
+      if (!token || !username) {
+        return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+      }
+
       const { url, branch } = req.body;
       if (!url) {
         return res.status(400).json({ error: "Repository URL is required" });
@@ -65,6 +76,7 @@ export default async function handler(req, res) {
       
       const newRepo = {
         id: repoId,
+        user: username,
         url,
         name,
         owner,
@@ -84,7 +96,6 @@ export default async function handler(req, res) {
       // To prevent frontend timeouts, we can start the container creation.
       // Since container cloning is fast (shallow clone), we can await it or run it in background.
       // Let's run it and await so that the response returns the finished configuration.
-      const token = process.env.GITHUB_ACCESS_TOKEN;
       const { containerId, isDocker, metadata } = await createContainer(repoId, url, targetBranch, token);
       const sandboxId = await createSandbox(containerId);
 

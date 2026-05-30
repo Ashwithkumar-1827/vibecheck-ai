@@ -1,5 +1,7 @@
 import { readFileFromContainer, writeFileToContainer } from '../../../lib/container';
 import { resilientReplace } from '../../../lib/patcher';
+import { getRepos } from '../../../lib/repos';
+import { getUserFromRequest } from '../../../lib/session';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,9 +10,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const username = await getUserFromRequest(req);
+    if (!username) {
+      return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+    }
+
     const { sandboxId, filePath, originalCode, patchedCode, patches } = req.body;
     if (!sandboxId) {
       return res.status(400).json({ error: "sandboxId is required" });
+    }
+
+    // Verify ownership of the sandbox
+    const repo = getRepos().find(r => r.sandboxId === sandboxId);
+    if (!repo || repo.user !== username) {
+      return res.status(404).json({ error: "Sandbox not found" });
     }
 
     const patchesToApply = Array.isArray(patches)

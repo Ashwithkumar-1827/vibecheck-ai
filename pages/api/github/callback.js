@@ -1,4 +1,5 @@
-import { exchangeCodeForToken, storeToken } from '../../../lib/github';
+import { exchangeCodeForToken } from '../../../lib/github';
+import { setGitHubCookie } from '../../../lib/session';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     const token = await exchangeCodeForToken(code);
-    storeToken(token);
+    setGitHubCookie(res, token);
     return res.redirect('/console/repositories?github=connected');
   } catch (err) {
     console.error('[OAuth Callback Error] Exchange failed:', err.message);

@@ -1,7 +1,8 @@
 import { createSandbox, destroySandbox, getSandboxDiff } from '../../../lib/sandbox';
 import { getWorkspacePath } from '../../../lib/container';
 import { buildKnowledgeGraph } from '../../../lib/knowledgeGraph';
-import { getRepoById, upsertRepo } from '../../../lib/repos';
+import { getRepos, getRepoById, upsertRepo } from '../../../lib/repos';
+import { getUserFromRequest } from '../../../lib/session';
 import fs from 'fs';
 import path from 'path';
 
@@ -9,6 +10,11 @@ const SCRATCH_DIR = path.join(process.cwd(), 'scratch');
 const CONTAINER_STORE = path.join(SCRATCH_DIR, 'containers');
 
 export default async function handler(req, res) {
+  const username = await getUserFromRequest(req);
+  if (!username) {
+    return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+  }
+
   if (req.method === 'POST') {
     try {
       const { repoId, containerId } = req.body;
@@ -16,15 +22,17 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "repoId and containerId are required" });
       }
 
+      const repo = getRepoById(repoId);
+      if (!repo || repo.user !== username) {
+        return res.status(404).json({ error: "Repository not found" });
+      }
+
       // Create isolated sandbox
       const sandboxId = await createSandbox(containerId);
 
       // Save sandbox association to repo db
-      const repo = getRepoById(repoId);
-      if (repo) {
-        repo.sandboxId = sandboxId;
-        upsertRepo(repo);
-      }
+      repo.sandboxId = sandboxId;
+      upsertRepo(repo);
 
       return res.status(201).json({
         success: true,
@@ -42,6 +50,12 @@ export default async function handler(req, res) {
       const { sandboxId } = req.query;
       if (!sandboxId) {
         return res.status(400).json({ error: "sandboxId is required" });
+      }
+
+      // Find the repository associated with this sandbox to verify ownership
+      const repo = getRepos().find(r => r.sandboxId === sandboxId);
+      if (!repo || repo.user !== username) {
+        return res.status(404).json({ error: "Sandbox not found" });
       }
 
       const sandboxPath = path.join(CONTAINER_STORE, sandboxId);
@@ -82,6 +96,19 @@ export default async function handler(req, res) {
       const { sandboxId, repoId } = req.query;
       if (!sandboxId) {
         return res.status(400).json({ error: "sandboxId is required" });
+      }
+
+      // Verify ownership before deleting
+      if (repoId) {
+        const repo = getRepoById(repoId);
+        if (!repo || repo.user !== username) {
+          return res.status(404).json({ error: "Repository not found" });
+        }
+      } else {
+        const repo = getRepos().find(r => r.sandboxId === sandboxId);
+        if (!repo || repo.user !== username) {
+          return res.status(404).json({ error: "Sandbox not found" });
+        }
       }
 
       await destroySandbox(sandboxId);

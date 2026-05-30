@@ -1,4 +1,6 @@
 import { runContainerPipeline } from '../../../lib/executor';
+import { getRepos } from '../../../lib/repos';
+import { getUserFromRequest } from '../../../lib/session';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,9 +9,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const username = await getUserFromRequest(req);
+    if (!username) {
+      return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+    }
+
     const { sandboxId } = req.body;
     if (!sandboxId) {
       return res.status(400).json({ error: "Sandbox container ID is required" });
+    }
+
+    // Verify ownership of the sandbox
+    const repo = getRepos().find(r => r.sandboxId === sandboxId);
+    if (!repo || repo.user !== username) {
+      return res.status(404).json({ error: "Sandbox not found" });
     }
 
     // Execute the test stages inside the sandbox container!

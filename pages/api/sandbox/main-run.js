@@ -4,6 +4,7 @@ import { execFileSync } from 'child_process';
 import { getRepoById, upsertRepo } from '../../../lib/repos';
 import { writeFileToContainer } from '../../../lib/container';
 import { runContainerPipeline } from '../../../lib/executor';
+import { getUserFromRequest } from '../../../lib/session';
 
 const CONTAINER_STORE = path.join(process.cwd(), 'scratch', 'containers');
 
@@ -101,6 +102,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const username = await getUserFromRequest(req);
+    if (!username) {
+      return res.status(401).json({ error: "Unauthorized: Please connect GitHub first" });
+    }
+
     const { repoId, sandboxId } = req.body || {};
 
     if (!repoId || !sandboxId) {
@@ -108,7 +114,7 @@ export default async function handler(req, res) {
     }
 
     const repo = getRepoById(repoId);
-    if (!repo || !repo.containerId) {
+    if (!repo || repo.user !== username || !repo.containerId) {
       return res.status(404).json({ error: 'Repository container not found.' });
     }
 

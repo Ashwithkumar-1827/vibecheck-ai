@@ -2,6 +2,7 @@ import { getRepoById, upsertRepo, deleteRepo } from '../../../lib/repos';
 import { destroyContainer, getWorkspacePath, readFileFromContainer, resolveWorkspacePath } from '../../../lib/container';
 import { destroySandbox, getSandboxDiff } from '../../../lib/sandbox';
 import { createBranch, commitFileToBranch, createPullRequest, getRepoMetadata, getRefSha, forkRepository, checkRepoExists } from '../../../lib/github';
+import { getGitHubToken, getUserFromRequest } from '../../../lib/session';
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
@@ -18,23 +19,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "repoId and sandboxId are required" });
     }
 
-    // Re-read token from .env file in case it was refreshed after server start
-    const fs_env = require('fs');
-    const path_env = require('path');
-    const envPath = path_env.join(process.cwd(), '.env');
-    let token = process.env.GITHUB_ACCESS_TOKEN;
+    const token = getGitHubToken(req);
+    const username = await getUserFromRequest(req);
     
-    // Attempt to read the latest token from .env (in case it was updated via OAuth callback)
-    if (fs_env.existsSync(envPath)) {
-      const envContent = fs_env.readFileSync(envPath, 'utf-8');
-      const tokenMatch = envContent.match(/^GITHUB_ACCESS_TOKEN="?([^"\n]+)"?$/m);
-      if (tokenMatch && tokenMatch[1]) {
-        token = tokenMatch[1];
-        process.env.GITHUB_ACCESS_TOKEN = token;
-      }
-    }
-    
-    if (!token) {
+    if (!token || !username) {
       return res.status(401).json({ error: "GitHub integration is not connected. Please connect via Repositories tab." });
     }
 
@@ -50,7 +38,7 @@ export default async function handler(req, res) {
 
     // 1. Load repository details
     const repo = getRepoById(repoId);
-    if (!repo) {
+    if (!repo || repo.user !== username) {
       return res.status(404).json({ error: "Repository record not found" });
     }
 
