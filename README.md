@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Sandboxed_Execution-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](https://opensource.org)
 
-**VibeCheck AI** is an autonomous, self-correcting developer automation platform. By directly wrapping your CI/CD execution pipeline with active AI-driven diagnostic layers, it catches compilation and runtime test failures inside isolated sandbox environments, diagnoses root causes, generates precision patches, verifies the repaired code, and opens PRs on GitHub, all in seconds without human manual log parsing.
+**VibeCheck AI** is an autonomous, self-correcting developer automation platform. By directly wrapping your CI/CD execution pipeline with active AI-driven diagnostic layers, it catches compilation and runtime pipeline failures inside isolated sandbox environments, diagnoses root causes, generates precision patches, verifies the repaired code, and opens PRs on GitHub, all in seconds without human manual log parsing.
 
 ---
 
@@ -36,7 +36,7 @@ VibeCheck AI is built around a secure, resilient, and zero-trust self-correcting
 To make VibeCheck AI safe and scalable for enterprise codebases, we solved two critical engineering challenges: **host execution security** and **cascading microservice dependencies**.
 
 ### 1. Why VibeCheck AI Enforces Sandbox Isolation (Security Concerns)
-Running automated pipeline checks, dependency installations, and test runners (like `pytest` or `npm test`) directly on the host server poses severe security risks:
+Running automated pipeline checks, dependency installations, and pipeline runners (like `pytest` or `npm run pipeline`) directly on the host server poses severe security risks:
 *   **Arbitrary Code Execution**: Testing unverified repositories exposes the host machine to malicious or unstable scripts that could hijack the server.
 *   **Secrets Exposure**: Malicious dependency configurations or tests could access local environment variables, leaking your critical cloud keys, Personal Access Tokens, and database credentials.
 *   **File System Contamination**: Unbounded code changes can corrupt the local OS directory structures or write backdoors to server storage.
@@ -155,8 +155,8 @@ This builds `vibecheck-node` and `vibecheck-python` images to support native con
 
 ![VibeCheck AI Application Flow](public/vibecheck-application-flow.svg)
 
-1.  **Trigger Pipeline**: An install, build, or test stage fails.
+1.  **Trigger Pipeline**: An install, build, or pipeline stage fails.
 2.  **Double-Pass Triage**: Gemini reads the traceback logs, extracts the buggy files relative to the repository path inside the sandbox container, and generates a block diff.
-3.  **Chat Vetting**: The developer uses the chat panel to ask questions about the patch, test safety, or modify implementation details.
-4.  **Approve**: Clicking "Approve & Execute Patch" runs the signature matcher to patch the code inside the container, re-running the test suite automatically to confirm the fix.
+3.  **Chat Vetting**: The developer uses the chat panel to ask questions about the patch, pipeline safety, or modify implementation details.
+4.  **Approve**: Clicking "Approve & Execute Patch" runs the signature matcher to patch the code inside the container, re-running the pipeline automatically to confirm the fix.
 5.  **Promote**: Creates a git branch, commits the fix, and pushes a complete Pull Request onto GitHub with the verification proofs attached.
