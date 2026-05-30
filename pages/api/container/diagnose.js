@@ -41,104 +41,131 @@ export default async function handler(req, res) {
       console.warn(`[AI Diagnosis] Could not read analysis.json: ${analysisReadErr.message}`);
     }
 
-    // Step 1: Initial AI diagnosis pass on logs: this MUST return ALL errors at once
-    let diagnosis = await diagnosePipeline(logs, '', { isMock: false, repoContext });
+    // Step 1: Pre-read ALL known buggy file sources from analysis.json BEFORE the first AI call
+    // This ensures the AI receives every error file's actual code upfront for maximum accuracy.
+    const fileSourceMap = {};
+    for (const err of analysisErrors) {
+      if (err.file && !fileSourceMap[err.file]) {
+        const actualSource = readFileFromContainer(containerId, err.file);
+        if (actualSource) {
+          fileSourceMap[err.file] = actualSource;
+        }
+      }
+    }
+
+    // Build combined source from all known buggy files for the initial diagnosis
+    let initialSource = '';
+    const preloadedFiles = Object.keys(fileSourceMap);
+    if (preloadedFiles.length > 0) {
+      for (const filePath of preloadedFiles) {
+        initialSource += `\n--- FILE: ${filePath} ---\n${fileSourceMap[filePath]}\n\n`;
+      }
+      console.log(`[AI Diagnosis] Pre-loaded ${preloadedFiles.length} buggy file source(s) from analysis.json: ${preloadedFiles.join(', ')}`);
+    }
+
+    // Step 2: Initial AI diagnosis pass with ALL known buggy file sources included
+    let diagnosis = await diagnosePipeline(logs, initialSource, { isMock: false, repoContext });
     
-    // Step 2: Self-correcting precision pass: read ALL buggy file sources from the container
-    // and run a SINGLE combined re-diagnosis with all file contents for maximum accuracy.
+    // Step 3: Self-correcting precision pass: collect any additional file sources from the
+    // AI's response that weren't in analysis.json, and run a combined re-diagnosis.
     if (Array.isArray(diagnosis.patches) && diagnosis.patches.length > 0) {
-      // Collect all unique file sources from the container workspace
-      const fileSourceMap = {};
+      // Add any new files the AI identified that we haven't read yet
+      let hasNewFiles = false;
       for (const patch of diagnosis.patches) {
         if (patch.filePath && !fileSourceMap[patch.filePath]) {
           const actualSource = readFileFromContainer(containerId, patch.filePath);
           if (actualSource) {
             fileSourceMap[patch.filePath] = actualSource;
-          }
-        }
-      }
-
-      // ALSO read files from analysis.json allErrors that the first AI pass may have missed
-      for (const err of analysisErrors) {
-        if (err.file && !fileSourceMap[err.file]) {
-          const actualSource = readFileFromContainer(containerId, err.file);
-          if (actualSource) {
-            fileSourceMap[err.file] = actualSource;
-            console.log(`[AI Diagnosis] Added file from analysis.json allErrors: ${err.file}`);
+            hasNewFiles = true;
+            console.log(`[AI Diagnosis] Added new file from AI diagnosis: ${patch.filePath}`);
           }
         }
       }
 
       const filePathsWithSource = Object.keys(fileSourceMap);
 
+      // Only re-run precision pass if we have source files to refine against
       if (filePathsWithSource.length > 0) {
-        // Build a combined source code string with all buggy files for a SINGLE precise pass
+        // Build a combined source code string with ALL buggy files
         let combinedSource = '';
         for (const filePath of filePathsWithSource) {
           combinedSource += `\n--- FILE: ${filePath} ---\n${fileSourceMap[filePath]}\n\n`;
         }
         
-        console.log(`[AI Diagnosis] Found ${filePathsWithSource.length} buggy file(s) inside container. Running single precise diagnosis pass with ALL file sources...`);
+        // Run precision pass only if we discovered new files or need to refine
+        if (hasNewFiles || filePathsWithSource.length > preloadedFiles.length) {
+          console.log(`[AI Diagnosis] Found ${filePathsWithSource.length} total buggy file(s). Running precision pass with ALL file sources...`);
+          const preciseDiagnosis = await diagnosePipeline(logs, combinedSource, { isMock: false, repoContext });
 
-        const preciseDiagnosis = await diagnosePipeline(logs, combinedSource, { isMock: false, repoContext });
-
-        if (preciseDiagnosis && !preciseDiagnosis.error && Array.isArray(preciseDiagnosis.patches) && preciseDiagnosis.patches.length > 0) {
-          // Merge: use precise patches where available, keep original patches for files not covered by precise pass
-          if (preciseDiagnosis.patches.length >= diagnosis.patches.length) {
-            // Precise pass found same or more patches — use them all
-            diagnosis.patches = preciseDiagnosis.patches;
-          } else {
-            // Precise pass returned fewer patches — merge with originals to avoid losing errors
-            const preciseFileMap = {};
-            for (const pp of preciseDiagnosis.patches) {
-              if (pp.filePath) preciseFileMap[pp.filePath] = pp;
-            }
-            const mergedPatches = [];
-            for (const origPatch of diagnosis.patches) {
-              if (origPatch.filePath && preciseFileMap[origPatch.filePath]) {
-                // Use the refined precise patch for this file
-                mergedPatches.push(preciseFileMap[origPatch.filePath]);
-                delete preciseFileMap[origPatch.filePath];
-              } else {
-                mergedPatches.push(origPatch);
+          if (preciseDiagnosis && !preciseDiagnosis.error && Array.isArray(preciseDiagnosis.patches) && preciseDiagnosis.patches.length > 0) {
+            if (preciseDiagnosis.patches.length >= diagnosis.patches.length) {
+              diagnosis.patches = preciseDiagnosis.patches;
+            } else {
+              // Merge: precise patches override originals for the same file
+              const preciseFileMap = {};
+              for (const pp of preciseDiagnosis.patches) {
+                if (pp.filePath) preciseFileMap[pp.filePath] = pp;
               }
-            }
-            // Add any remaining precise patches for files not in original set
-            for (const remaining of Object.values(preciseFileMap)) {
-              mergedPatches.push(remaining);
-            }
-            diagnosis.patches = mergedPatches;
-          }
-          console.log(`[AI Diagnosis] Precise pass returned ${preciseDiagnosis.patches.length} patch(es). Final merged count: ${diagnosis.patches.length}.`);
-        } else {
-          // If precise pass failed or returned fewer patches, keep original patches
-          // but try to refine each one individually as fallback
-          const updatedPatches = [];
-          for (const patch of diagnosis.patches) {
-            if (patch.filePath && fileSourceMap[patch.filePath]) {
-              try {
-                const singlePrecise = await diagnosePipeline(logs, fileSourceMap[patch.filePath], { isMock: false, repoContext });
-                if (singlePrecise && !singlePrecise.error) {
-                  const refinedPatch = Array.isArray(singlePrecise.patches) && singlePrecise.patches[0]
-                    ? singlePrecise.patches[0]
-                    : singlePrecise;
-                  updatedPatches.push({
-                    ...patch,
-                    originalCode: refinedPatch.originalCode || patch.originalCode,
-                    patchedCode: refinedPatch.patchedCode || patch.patchedCode,
-                    explanation: refinedPatch.explanation || patch.explanation,
-                    filePath: patch.filePath
-                  });
-                  continue;
+              const mergedPatches = [];
+              for (const origPatch of diagnosis.patches) {
+                if (origPatch.filePath && preciseFileMap[origPatch.filePath]) {
+                  mergedPatches.push(preciseFileMap[origPatch.filePath]);
+                  delete preciseFileMap[origPatch.filePath];
+                } else {
+                  mergedPatches.push(origPatch);
                 }
-              } catch (preciseErr) {
-                console.warn(`[AI Diagnosis] Individual precise pass failed for ${patch.filePath}: ${preciseErr.message}`);
               }
+              for (const remaining of Object.values(preciseFileMap)) {
+                mergedPatches.push(remaining);
+              }
+              diagnosis.patches = mergedPatches;
             }
-            updatedPatches.push(patch);
+            console.log(`[AI Diagnosis] Precision pass returned ${preciseDiagnosis.patches.length} patch(es). Final merged count: ${diagnosis.patches.length}.`);
           }
-          diagnosis.patches = updatedPatches;
         }
+
+        // Step 4: Cross-validate — ensure every file from analysis.json has a patch.
+        // If any are missing, run a targeted single-file pass for just those missing files.
+        const patchedFiles = new Set(diagnosis.patches.map(p => p.filePath).filter(Boolean));
+        const missingFiles = analysisErrors
+          .map(e => e.file)
+          .filter(f => f && !patchedFiles.has(f) && fileSourceMap[f]);
+        const uniqueMissing = [...new Set(missingFiles)];
+
+        if (uniqueMissing.length > 0) {
+          console.log(`[AI Diagnosis] Cross-validation: ${uniqueMissing.length} file(s) from analysis.json still missing patches: ${uniqueMissing.join(', ')}. Running targeted passes...`);
+          for (const missingFile of uniqueMissing) {
+            try {
+              const targetedDiag = await diagnosePipeline(logs, fileSourceMap[missingFile], { isMock: false, repoContext });
+              if (targetedDiag && !targetedDiag.error) {
+                const targetedPatch = Array.isArray(targetedDiag.patches) && targetedDiag.patches[0]
+                  ? targetedDiag.patches[0]
+                  : targetedDiag;
+                if (targetedPatch.originalCode && targetedPatch.patchedCode) {
+                  diagnosis.patches.push({
+                    filePath: missingFile,
+                    explanation: targetedPatch.explanation || '',
+                    originalCode: targetedPatch.originalCode,
+                    patchedCode: targetedPatch.patchedCode
+                  });
+                  console.log(`[AI Diagnosis] Targeted pass succeeded for missing file: ${missingFile}`);
+                }
+              }
+            } catch (targetErr) {
+              console.warn(`[AI Diagnosis] Targeted pass failed for ${missingFile}: ${targetErr.message}`);
+            }
+          }
+        }
+
+        // Deduplicate patches — keep only the last (most refined) patch per file
+        const deduped = new Map();
+        for (const patch of diagnosis.patches) {
+          if (patch.filePath) {
+            deduped.set(patch.filePath, patch);
+          }
+        }
+        diagnosis.patches = [...deduped.values()];
+        console.log(`[AI Diagnosis] Final deduplicated patch count: ${diagnosis.patches.length}`);
       }
       
       // Update root-level backward compatible fields from first patch
@@ -149,14 +176,21 @@ export default async function handler(req, res) {
         diagnosis.patchedCode = diagnosis.patches[0].patchedCode;
       }
     } else if (diagnosis.filePath && !diagnosis.error) {
-      // Legacy single-patch format: try to refine it
+      // Legacy single-patch format: try to refine it with actual source
       const actualSource = readFileFromContainer(containerId, diagnosis.filePath);
       if (actualSource) {
-        console.log(`[AI Diagnosis] Found buggy file inside container workspace: ${diagnosis.filePath}. Re-running precise diagnosis pass...`);
-        const preciseDiagnosis = await diagnosePipeline(logs, actualSource, { isMock: false, repoContext });
+        // Also include any analysis.json files not yet covered
+        let combinedLegacy = `\n--- FILE: ${diagnosis.filePath} ---\n${actualSource}\n\n`;
+        for (const err of analysisErrors) {
+          if (err.file && err.file !== diagnosis.filePath && fileSourceMap[err.file]) {
+            combinedLegacy += `\n--- FILE: ${err.file} ---\n${fileSourceMap[err.file]}\n\n`;
+          }
+        }
+        
+        console.log(`[AI Diagnosis] Legacy format. Re-running precise diagnosis with all known files...`);
+        const preciseDiagnosis = await diagnosePipeline(logs, combinedLegacy, { isMock: false, repoContext });
         
         if (preciseDiagnosis && !preciseDiagnosis.error) {
-          // If precise pass found multiple patches, use them all
           if (Array.isArray(preciseDiagnosis.patches) && preciseDiagnosis.patches.length > 0) {
             diagnosis = {
               ...preciseDiagnosis,

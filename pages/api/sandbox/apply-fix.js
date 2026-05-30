@@ -58,15 +58,8 @@ export default async function handler(req, res) {
         writeFileToContainer(sandboxId, patch.filePath, patchedContent);
         results.push({ filePath: patch.filePath, success: true });
       } catch (patchErr) {
-        console.warn(`[Sandbox Apply Fix] Patcher failed for ${patch.filePath}: ${patchErr.message}. Attempting direct write fallback...`);
-        // Direct write fallback: use the AI's patchedCode as the full file content
-        try {
-          writeFileToContainer(sandboxId, patch.filePath, patch.patchedCode);
-          results.push({ filePath: patch.filePath, success: true, fallback: true });
-          console.log(`[Sandbox Apply Fix] Direct write fallback succeeded for ${patch.filePath}`);
-        } catch (writeErr) {
-          results.push({ filePath: patch.filePath, success: false, error: writeErr.message });
-        }
+        console.warn(`[Sandbox Apply Fix] Patcher failed for ${patch.filePath}: ${patchErr.message}. Patch could not be safely matched to file contents.`);
+        results.push({ filePath: patch.filePath, success: false, error: `Patch match failed: ${patchErr.message}. File was NOT modified to prevent corruption. Please review the patch or re-run diagnosis.` });
       }
     }
 
