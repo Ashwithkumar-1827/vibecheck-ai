@@ -289,18 +289,8 @@ export default function AboutPage() {
                   <h3 className="text-xl font-semibold text-white tracking-tight">Ashwith Kumar</h3>
                   
                   <p className="text-[13.5px] text-zinc-400 leading-relaxed">
-                    Ashwith is an ML Engineer specializing in designing and automating scalable Python ETL data pipelines, processing large-scale datasets, and running distributed machine learning experiments on Apache Spark and Databricks for rapid model iteration. Having deployed predictive models on Microsoft Azure using Azure Data Factory and Databricks for seamless pipeline orchestration, he specializes in building self-monitoring, agentic AI workflows using LangGraph to enable automated decision-making and real-time validation in production environments.
+                    Ashwith is a Machine Learning Engineer and AI Builder who transforms complex data and advanced AI into intelligent, production-ready systems. He specializes in architecting scalable data platforms, automating high-performance Python ETL pipelines, and leveraging Apache Spark and Databricks to process massive datasets and accelerate machine learning innovation. From deploying predictive models on Microsoft Azure to orchestrating seamless workflows with Azure Data Factory and Databricks, he builds solutions designed for reliability, scalability, and business impact. Passionate about the next generation of AI, Ashwith develops autonomous agentic systems using LangGraph that can reason, self-monitor, validate outcomes in real time, and make intelligent decisions with minimal human intervention. His expertise spans data engineering, machine learning, MLOps, and AI automation, enabling him to create systems that not only analyze data but also adapt, learn, and drive meaningful outcomes at scale.
                   </p>
-
-                  {/* Skills tags */}
-                  <div className="pt-2">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 font-bold block mb-2">Machine Learning Stack</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['Python', 'Apache Spark', 'Databricks', 'Azure Data Factory', 'LangGraph', 'Scikit-Learn', 'TensorFlow', 'REST APIs'].map((tech) => (
-                        <span key={tech} className="px-2 py-1 rounded-md bg-zinc-950/80 border border-zinc-900 text-[10px] font-mono text-zinc-400">{tech}</span>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Social Actions row */}
@@ -309,16 +299,6 @@ export default function AboutPage() {
                     Connecting data architectures to active models.
                   </div>
                   <div className="flex items-center gap-3">
-                    <a 
-                      href="https://github.com/Ashwithkumar-1827" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn-secondary flex items-center gap-2"
-                      style={{ padding: '8px 16px', fontSize: '12px' }}
-                    >
-                      <Github className="h-3.5 w-3.5" />
-                      GitHub
-                    </a>
                     <a 
                       href="https://www.linkedin.com/in/madishetti-ashwith-kumar" 
                       target="_blank" 
