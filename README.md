@@ -153,7 +153,7 @@ This builds `vibecheck-node` and `vibecheck-python` images to support native con
 
 ## 🤖 The Self-Correcting Workflow (How it Works)
 
-![VibeCheck AI Application Flow](public/vibecheck-application-flow.png)
+![VibeCheck AI Application Flow](public/vibecheck-application-flow.svg)
 
 1.  **Trigger Pipeline**: An install, build, or test stage fails.
 2.  **Double-Pass Triage**: Gemini reads the traceback logs, extracts the buggy files relative to the repository path inside the sandbox container, and generates a block diff.

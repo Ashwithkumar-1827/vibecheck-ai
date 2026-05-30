@@ -1,0 +1,250 @@
+<svg 
+  id="lifecycle-svg-flowchart" 
+  xmlns="http://www.w3.org/2000/svg" 
+  viewBox="0 0 800 2120"
+  width="100%"
+  height="100%"
+>
+  <rect width="800" height="2120" rx="16" fill="#090909" />
+  <defs>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#52525b" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f43f5e" />
+    </marker>
+  </defs>
+
+  <!-- Lines & Paths -->
+  <path d="M 400,160 L 400,220" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 340,280 L 220,280" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-red)" />
+  <path d="M 130,320 L 130,420 A 20,20 0 0 0 150,440 L 300,440" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-red)" />
+  <path d="M 400,340 L 400,400" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-green)" />
+  <path d="M 400,480 L 400,505" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 400,575 L 400,640" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 400,780 L 400,840" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 400,960 L 400,1020" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-red)" />
+  <path d="M 460,900 L 640,900 A 20,20 0 0 1 660,920 L 660,1730 A 20,20 0 0 1 640,1750 L 460,1750" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow-green)" />
+  <path d="M 400,1160 L 400,1220" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 400,1300 L 400,1360" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 400,1510 L 400,1570" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 340,1630 L 160,1630 A 20,20 0 0 1 140,1610 L 140,1280 A 20,20 0 0 1 160,1260 L 300,1260" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow-red)" />
+  <path d="M 400,1690 L 400,1750" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-green)" />
+  <path d="M 400,1880 L 400,1940" fill="none" stroke="#52525b" stroke-width="2" marker-end="url(#arrow-gray)" />
+  <path d="M 340,2000 L 240,2000" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-green)" />
+  <path d="M 460,2000 L 560,2000" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-red)" />
+
+  <!-- Decision Overlays -->
+  <g>
+    <rect x="230" y="250" width="110" height="25" rx="4" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="285" y="266" fill="#fb7185" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">YES (AUTH REQUIRED)</text>
+  </g>
+  <g>
+    <rect x="410" y="350" width="110" height="25" rx="4" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="465" y="366" fill="#34d399" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">NO (PUBLIC CLONE)</text>
+  </g>
+  <g>
+    <rect x="410" y="970" width="110" height="25" rx="4" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="465" y="986" fill="#fb7185" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">YES (TRACE FAIL)</text>
+  </g>
+  <g>
+    <rect x="490" y="875" width="110" height="25" rx="4" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="545" y="891" fill="#34d399" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">NO (BYPASS TRIAGE)</text>
+  </g>
+  <g>
+    <rect x="180" y="1640" width="130" height="25" rx="4" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="245" y="1656" fill="#fb7185" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">NO (REGRESSION RETRY)</text>
+  </g>
+  <g>
+    <rect x="410" y="1700" width="110" height="25" rx="4" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="465" y="1716" fill="#34d399" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">YES (ALL CLEAN)</text>
+  </g>
+  <g>
+    <rect x="250" y="1970" width="80" height="25" rx="4" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="290" y="1986" fill="#34d399" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">NO (ACTIVE)</text>
+  </g>
+  <g>
+    <rect x="470" y="1970" width="80" height="25" rx="4" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="510" y="1986" fill="#fb7185" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">YES (CLEANUP)</text>
+  </g>
+
+  <!-- Flowchart Presentation Cards -->
+  <g>
+    <rect x="280" y="40" width="240" height="120" rx="12" fill="#0f0f13" stroke="#27272a" stroke-width="1.5" />
+    <text x="294" y="62" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="0.5">GITHUB REPO IMPORT</text>
+    <rect x="442" y="52" width="28" height="13" rx="3" fill="#ff7a3d" fill-opacity="0.1" stroke="#ff7a3d" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="446" y="61" fill="#ff7a3d" font-size="7" font-family="monospace" font-weight="bold">NEW</text>
+    <rect x="476" y="52" width="30" height="13" rx="3" fill="#f59e0b" fill-opacity="0.1" stroke="#f59e0b" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="481" y="61" fill="#f59e0b" font-size="7" font-family="monospace" font-weight="bold">ATTN</text>
+    <rect x="294" y="78" width="212" height="20" rx="4" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+    <circle cx="304" cy="88" r="3" fill="#6366f1" />
+    <text x="314" y="91" fill="#a1a1aa" font-size="7.5" font-family="monospace">github.com/vibecheck-ai/mock...</text>
+    <rect x="488" y="82" width="14" height="12" rx="2" fill="#27272a" />
+    <text x="491" y="90" fill="#ffffff" font-size="6" font-family="monospace">GO</text>
+    <text x="294" y="114" fill="#a1a1aa" font-size="8.5" font-family="sans-serif">
+      <tspan x="294" dy="0">User inputs remote Git URL to start the autonomic</tspan>
+      <tspan x="294" dy="12">workspace pipeline.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <polygon points="400,220 460,280 400,340 340,280" fill="#172554" stroke="#3b82f6" stroke-width="1.5" />
+    <text x="400" y="283" fill="#60a5fa" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">Is Repo Private?</text>
+  </g>
+
+  <g>
+    <ellipse cx="130" cy="280" rx="90" ry="40" fill="#451a03" stroke="#f59e0b" stroke-width="1.5" />
+    <text x="130" y="272" fill="#fde047" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">OAUTH HANDSHAKE</text>
+    <text x="130" y="286" fill="#eab308" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="130" dy="0">Exchange keys to fetch private</tspan>
+      <tspan x="130" dy="11">repo paths securely.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <ellipse cx="400" cy="440" rx="100" ry="40" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="400" y="432" fill="#34d399" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">WORKSPACE LOCAL INIT</text>
+    <text x="400" y="446" fill="#a7f3d0" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="400" dy="0">System creates local workspace and</tspan>
+      <tspan x="400" dy="11">syncs metadata in db.json.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <ellipse cx="400" cy="540" rx="115" ry="35" fill="#2e1065" stroke="#8b5cf6" stroke-width="1.5" />
+    <text x="400" y="532" fill="#c084fc" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">GRAPHIFY DEPS MAPPER</text>
+    <text x="400" y="546" fill="#ddd6fe" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="400" dy="0">Parses cloned repo to map AST nodes</tspan>
+      <tspan x="400" dy="11">and cross-file structural dependencies.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <rect x="280" y="640" width="240" height="140" rx="12" fill="#0f0f13" stroke="#27272a" stroke-width="1.5" />
+    <text x="294" y="662" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="0.5">SANDBOX COCKPIT</text>
+    <rect x="442" y="652" width="28" height="13" rx="3" fill="#ff7a3d" fill-opacity="0.1" stroke="#ff7a3d" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="446" y="661" fill="#ff7a3d" font-size="7" font-family="monospace" font-weight="bold">NEW</text>
+    <rect x="476" y="652" width="30" height="13" rx="3" fill="#6366f1" fill-opacity="0.1" stroke="#6366f1" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="481" y="661" fill="#818cf8" font-size="7" font-family="monospace" font-weight="bold">REVW</text>
+    <rect x="294" y="678" width="212" height="32" rx="4" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+    <line x1="300" y1="686" x2="360" y2="686" stroke="#52525b" stroke-width="3" stroke-linecap="round" />
+    <line x1="300" y1="692" x2="350" y2="692" stroke="#52525b" stroke-width="3" stroke-linecap="round" />
+    <line x1="300" y1="698" x2="355" y2="698" stroke="rgba(99, 102, 241, 0.6)" stroke-width="3" stroke-linecap="round" />
+    <line x1="370" y1="682" x2="370" y2="706" stroke="#27272a" stroke-width="0.5" />
+    <text x="376" y="688" fill="#a1a1aa" font-size="5" font-family="monospace" font-weight="bold">CODE DIFF VIEW</text>
+    <line x1="376" y1="694" x2="496" y2="694" stroke="rgba(16, 185, 129, 0.7)" stroke-width="3" stroke-linecap="round" />
+    <line x1="376" y1="700" x2="480" y2="700" stroke="rgba(244, 63, 94, 0.7)" stroke-width="3" stroke-linecap="round" />
+    <text x="294" y="734" fill="#a1a1aa" font-size="8.5" font-family="sans-serif">
+      <tspan x="294" dy="0">Loads buggy repository structure inside fully secure,</tspan>
+      <tspan x="294" dy="12">isolated sandbox editor cockpit.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <polygon points="400,840 460,900 400,960 340,900" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="400" y="903" fill="#fda4af" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">Tests Fail?</text>
+  </g>
+
+  <g>
+    <rect x="280" y="1020" width="240" height="140" rx="12" fill="#0f0f13" stroke="#27272a" stroke-width="1.5" />
+    <text x="294" y="1042" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="0.5">AI TRIAGE ENGINE</text>
+    <rect x="442" y="1032" width="28" height="13" rx="3" fill="#f43f5e" fill-opacity="0.1" stroke="#f43f5e" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="446" y="1041" fill="#fb7185" font-size="7" font-family="monospace" font-weight="bold">ASAP</text>
+    <rect x="476" y="1032" width="30" height="13" rx="3" fill="#f59e0b" fill-opacity="0.1" stroke="#f59e0b" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="481" y="1041" fill="#f59e0b" font-size="7" font-family="monospace" font-weight="bold">ATTN</text>
+    <rect x="294" y="1058" width="212" height="32" rx="4" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+    <text x="300" y="1068" fill="#a1a1aa" font-size="5.5" font-family="monospace">COMPRESSED STACK TRACE LOGS</text>
+    <text x="446" y="1068" fill="#10b981" font-size="5.5" font-family="monospace" font-weight="bold">94% CONFIDENCE</text>
+    <rect x="300" y="1076" width="200" height="6" rx="2" fill="#27272a" />
+    <rect x="300" y="1076" width="180" height="6" rx="2" fill="#6366f1" />
+    <text x="294" y="1114" fill="#a1a1aa" font-size="8.5" font-family="sans-serif">
+      <tspan x="294" dy="0">Parses traces. Calls Gemini AI to output highly</tspan>
+      <tspan x="294" dy="12">structured AST corrective patches.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <ellipse cx="400" cy="1260" rx="100" ry="40" fill="#0c2540" stroke="#0ea5e9" stroke-width="1.5" />
+    <text x="400" y="1252" fill="#38bdf8" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">DEVELOPER REVIEW CHAT</text>
+    <text x="400" y="1266" fill="#7dd3fc" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="400" dy="0">Iterate, dialogue, and refine structural</tspan>
+      <tspan x="400" dy="11">fixes in real-time.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <rect x="280" y="1360" width="240" height="150" rx="12" fill="#0f0f13" stroke="#27272a" stroke-width="1.5" />
+    <text x="294" y="1382" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="0.5">CONTAINER TEST PIPELINE</text>
+    <rect x="442" y="1372" width="28" height="13" rx="3" fill="#ff7a3d" fill-opacity="0.1" stroke="#ff7a3d" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="446" y="1381" fill="#ff7a3d" font-size="7" font-family="monospace" font-weight="bold">NEW</text>
+    <rect x="476" y="1372" width="30" height="13" rx="3" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="481" y="1381" fill="#34d399" font-size="7" font-family="monospace" font-weight="bold">DONE</text>
+    <g>
+      <rect x="294" y="1398" width="64" height="16" rx="2" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+      <circle cx="302" cy="1406" r="2.5" fill="#10b981" />
+      <text x="310" y="1409" fill="#a1a1aa" font-size="6" font-family="monospace">Install</text>
+    </g>
+    <g>
+      <rect x="368" y="1398" width="64" height="16" rx="2" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+      <circle cx="376" cy="1406" r="2.5" fill="#10b981" />
+      <text x="384" y="1409" fill="#a1a1aa" font-size="6" font-family="monospace">Build</text>
+    </g>
+    <g>
+      <rect x="442" y="1398" width="64" height="16" rx="2" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+      <circle cx="450" cy="1406" r="2.5" fill="#10b981" />
+      <text x="458" y="1409" fill="#a1a1aa" font-size="6" font-family="monospace">Test</text>
+    </g>
+    <text x="294" y="1438" fill="#a1a1aa" font-size="8.5" font-family="sans-serif">
+      <tspan x="294" dy="0">Executes sterile container test suite (Install,</tspan>
+      <tspan x="294" dy="12">Build, and Test stages) for verification.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <polygon points="400,1570 460,1630 400,1690 340,1630" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="400" y="1633" fill="#6ee7b7" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">Tests Pass?</text>
+  </g>
+
+  <g>
+    <rect x="280" y="1750" width="240" height="130" rx="12" fill="#0f0f13" stroke="#27272a" stroke-width="1.5" />
+    <text x="294" y="1772" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold" letter-spacing="0.5">AUTONOMIC PR PROMOTE</text>
+    <rect x="442" y="1762" width="28" height="13" rx="3" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="446" y="1771" fill="#34d399" font-size="7" font-family="monospace" font-weight="bold">DONE</text>
+    <rect x="476" y="1762" width="30" height="13" rx="3" fill="#6366f1" fill-opacity="0.1" stroke="#6366f1" stroke-opacity="0.3" stroke-width="0.5" />
+    <text x="481" y="1771" fill="#818cf8" font-size="7" font-family="monospace" font-weight="bold">REVW</text>
+    <rect x="294" y="1788" width="212" height="20" rx="4" fill="#18181f" stroke="#27272a" stroke-width="0.75" />
+    <text x="300" y="1801" fill="#a1a1aa" font-size="6.5" font-family="monospace" font-weight="bold">PR #14 Promoted successfully!</text>
+    <rect x="452" y="1792" width="50" height="12" rx="2" fill="#4f46e5" />
+    <text x="477" y="1800" fill="#ffffff" font-size="5.5" font-family="sans-serif" font-weight="bold" text-anchor="middle">Back to Repo</text>
+    <text x="294" y="1826" fill="#a1a1aa" font-size="8.5" font-family="sans-serif">
+      <tspan x="294" dy="0">Stages modifications. Auto-commits and pushes</tspan>
+      <tspan x="294" dy="12">branch upstream. Creates PR autonomously.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <polygon points="400,1940 460,2000 400,2060 340,2000" fill="#451a03" stroke="#f59e0b" stroke-width="1.5" />
+    <text x="400" y="2003" fill="#fde047" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">Disconnected?</text>
+  </g>
+
+  <g>
+    <ellipse cx="140" cy="2000" rx="100" ry="40" fill="#064e3b" stroke="#10b981" stroke-width="1.5" />
+    <text x="140" y="1992" fill="#34d399" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">PR STATUS MONITORING</text>
+    <text x="140" y="2006" fill="#a7f3d0" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="140" dy="0">"Open Sandbox" button transforms</tspan>
+      <tspan x="140" dy="11">to "PR Status" tracker.</tspan>
+    </text>
+  </g>
+
+  <g>
+    <ellipse cx="660" cy="2000" rx="100" ry="40" fill="#450a0a" stroke="#f43f5e" stroke-width="1.5" />
+    <text x="660" y="1992" fill="#fb7185" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">AUTONOMIC TEARDOWN</text>
+    <text x="660" y="2006" fill="#fda4af" font-size="8.5" font-family="sans-serif" text-anchor="middle">
+      <tspan x="660" dy="0">Emergency cleanup: Wipes all container</tspan>
+      <tspan x="660" dy="11">workspaces automatically!</tspan>
+    </text>
+  </g>
+</svg>
