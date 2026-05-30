@@ -28,7 +28,7 @@ export default function RepoManager({ onNavigateToSandbox }) {
 
   useEffect(() => {
     fetchRepos();
-  }, []);
+  }, [isGithubConnected]);
 
   const handleClone = async (e) => {
     e.preventDefault();
